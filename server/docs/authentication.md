@@ -1,12 +1,12 @@
 # TaoScreen 登录与管理员后台
 
-普通用户可以使用邮箱密码、Google 或 GitHub。管理员使用本地密码加动态码或独立的 Cloudflare Access 应用。管理员身份与桌面用户账号及远程权限隔离。
+普通用户可以使用邮箱密码、Google 或 GitHub。管理员使用本地密码登录，默认还需动态码，也可使用独立的 Cloudflare Access 应用。管理员身份与桌面用户账号及远程权限隔离。
 
 ## 自托管登录
 
-1. 将 `.env.production.example` 复制为仅部署者可读的 `.env.selfhost`。设置 `POSTGRES_PASSWORD` 和实例的 HTTPS 根地址 `AUTH_PUBLIC_URL`，用 `openssl rand -base64 32` 生成 `ADMIN_TOTP_KEY`。妥善保存此密钥与数据库备份，恢复实例时两者需要配套。
+1. 将 `.env.production.example` 复制为仅部署者可读的 `.env.selfhost`。设置 `POSTGRES_PASSWORD` 和实例的 HTTPS 根地址 `AUTH_PUBLIC_URL`。`ADMIN_TOTP_ENABLED` 默认是 `true`，用 `openssl rand -base64 32` 生成 `ADMIN_TOTP_KEY`。妥善保存此密钥与数据库备份，恢复实例时两者需要配套。
 2. 使用 HTTPS 反向代理转发到 Compose 在 `127.0.0.1:28080` 发布的端口。代理保留原始 `Host`、转发 WebSocket，并覆盖客户端传入的 `X-Forwarded-Proto` 为代理实际接收的协议。将服务容器看到的直接代理地址按 `/32` 或 `/128` 写入 `TRUSTED_PROXY_CIDRS`。宿主机代理经 Docker 转发时，服务容器看到的可能是 Docker 网关。浏览器和桌面客户端均使用对外的 HTTPS 地址。
-3. 运行以下命令。第一个命令启动 PostgreSQL、Redis 和应用，并执行迁移。第二个命令要求交互终端，输入密码、在验证器扫码并输入六位动态码。请离线保存输出的一次性恢复码。首次网页登录使用下一组动态码。
+3. 运行以下命令。第一个命令启动 PostgreSQL、Redis 和应用，并执行迁移。第二个命令要求交互终端输入密码。开启动态码时，还需在验证器扫码并输入六位动态码，随后离线保存一次性恢复码。首次网页登录使用下一组动态码。
 
    ```sh
    docker compose --env-file .env.selfhost up -d --build --wait
@@ -15,7 +15,9 @@
 
 4. 浏览器打开实例的 `/admin`，登录后选择「创建本地账号」。在 macOS 的「账号连接」中填写实例地址，使用该邮箱和密码登录。还可以在托管机上运行 `docker compose --env-file .env.selfhost exec api /server create-user user@example.com` 创建普通账号。
 
-后台登录可使用密码加一条恢复码。需要重新绑定验证器或重置管理员密码时，在托管机上运行 `docker compose --env-file .env.selfhost exec api /server reset-admin admin@example.com`。重置会撤销该管理员的现有会话并替换恢复码。后台会话有效期为 8 小时，可以主动退出。无需配置邮件或短信。
+开启动态码时，后台登录也可使用密码加一条恢复码。需要绑定验证器或重置管理员密码时，在托管机上运行 `docker compose --env-file .env.selfhost exec api /server reset-admin admin@example.com`。重置会撤销该管理员的现有会话，在开启动态码时重新绑定验证器并替换恢复码。后台会话有效期为 8 小时，可以主动退出。无需配置邮件或短信。
+
+将 `ADMIN_TOTP_ENABLED` 设为 `false` 并重新部署后，本地管理员只需密码，`ADMIN_TOTP_KEY` 可留空。已有的验证器绑定和恢复码会保留。重新开启时恢复原来的 `ADMIN_TOTP_KEY`，此前仅凭密码签发的会话会被拒绝，未绑定的管理员需运行 `reset-admin` 完成绑定。
 
 `ADMIN_AUTH_MODE=disabled` 可关闭后台。若改用 `cloudflare_access`，填写 Access 应用配置。Google/GitHub 各自的 Client ID 和 Secret 可按需配置。本地账号模式默认关闭公开注册和 OAuth 首次注册。
 

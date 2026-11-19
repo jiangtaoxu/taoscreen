@@ -35,7 +35,7 @@ Compose 项目名固定为 `taoscreen-local`，全新数据库与卷，不连接
 - `TRUSTED_PROXY_CIDRS`、`CLOUDFLARE_PROXY_CIDRS`：仅填写已确定的代理网段，不接受全网信任。
 
 - `ALLOW_PASSWORD_LOGIN` 控制普通用户邮箱密码登录。生产环境关闭 `ALLOW_REGISTRATION`。独立的 `ALLOW_SOCIAL_SIGNUP` 控制首次 OAuth 登录是否自动创建账号。
-- `ADMIN_AUTH_MODE` 可选 `local`、`cloudflare_access` 或 `disabled`。本地模式需要 `ADMIN_TOTP_KEY`，Access 模式需要独立团队域名、应用 AUD 和管理员邮箱白名单。
+- `ADMIN_AUTH_MODE` 可选 `local`、`cloudflare_access` 或 `disabled`。本地模式通过 `ADMIN_TOTP_ENABLED` 配置动态验证码，默认 `true`，开启时需要 `ADMIN_TOTP_KEY`。Access 模式需要独立团队域名、应用 AUD 和管理员邮箱白名单。
 
 数据库迁移显式运行 `server migrate`，使用 `MIGRATION_DATABASE_URL`；Compose 已串联迁移和就绪检查。初始迁移与原 Berth 不同，误连既有 Berth 数据库时会因迁移校验失败而拒绝运行。
 

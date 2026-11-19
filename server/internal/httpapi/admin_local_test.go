@@ -186,3 +186,91 @@ func TestAdminLocalLoginAndCreateUser(t *testing.T) {
 	request("GET", "/v1/admin/me", "", "", "", "", recoveryCookie, 401)
 	login(recovery[1], server.URL, 401)
 }
+
+func TestAdminLocalOptionalTOTP(t *testing.T) {
+	fixture := integrationSocial(t)
+	disabled := New(config.Config{Env: "production", Auth: config.Auth{
+		AdminMode: "local", AdminTOTPDisabled: true,
+	}}, fixture.db, fixture.s.Redis)
+	enabled := New(config.Config{Env: "production", Auth: config.Auth{
+		AdminMode: "local", AdminOTPKey: []byte("test-local-admin-key-is-32-bytes"),
+	}}, fixture.db, fixture.s.Redis)
+	ctx := context.Background()
+	email := "admin-" + uuid.NewString() + "@example.test"
+	peer := "test-admin-" + uuid.NewString() + ":1234"
+	const password = "initial-password-for-tests"
+	const newPassword = "replacement-password-for-tests"
+	codes, err := disabled.ProvisionAdmin(ctx, email, password, "", nil, false)
+	if err != nil || len(codes) != 0 {
+		t.Fatalf("关闭动态码时应只创建密码：%v", err)
+	}
+	t.Cleanup(func() { _, _ = fixture.db.Exec(ctx, "DELETE FROM local_admins WHERE email=$1", email) })
+
+	request := func(s *Server, method, path string, form url.Values, cookie *http.Cookie, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		req := httptest.NewRequest(method, "https://admin.example.test"+path, strings.NewReader(form.Encode()))
+		req.RemoteAddr = peer
+		if method == http.MethodPost {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Set("Origin", "https://admin.example.test")
+		}
+		if cookie != nil {
+			req.AddCookie(cookie)
+		}
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, req)
+		if w.Code != want {
+			t.Fatalf("%s %s: status=%d want=%d", method, path, w.Code, want)
+		}
+		return w
+	}
+	login := func(s *Server, password, code string, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		form := url.Values{"email": {email}, "password": {password}}
+		if code != "" {
+			form.Set("code", code)
+		}
+		return request(s, http.MethodPost, "/admin/login", form, nil, want)
+	}
+	readCookie := func(w *httptest.ResponseRecorder) *http.Cookie {
+		t.Helper()
+		cookies := w.Result().Cookies()
+		if len(cookies) != 1 {
+			t.Fatal("未签发管理员会话")
+		}
+		return cookies[0]
+	}
+
+	page := request(disabled, http.MethodGet, "/admin/login", nil, nil, http.StatusOK)
+	if strings.Contains(page.Body.String(), `name="code"`) {
+		t.Fatal("关闭动态码时不应渲染验证码输入框")
+	}
+	cookie := readCookie(login(disabled, password, "", http.StatusSeeOther))
+	request(disabled, http.MethodGet, "/v1/admin/me", nil, cookie, http.StatusOK)
+	request(enabled, http.MethodGet, "/v1/admin/me", nil, cookie, http.StatusUnauthorized)
+	unbound := login(enabled, password, "", http.StatusUnauthorized)
+	if !strings.Contains(unbound.Body.String(), "尚未绑定动态码") {
+		t.Fatal("启用动态码后应提示原密码账号完成绑定")
+	}
+
+	key, err := NewAdminAuthenticator(email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := totp.GenerateCode(key.Secret(), time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	codes, err = enabled.ProvisionAdmin(ctx, email, password, code, key, true)
+	if err != nil || len(codes) != 8 {
+		t.Fatalf("动态码绑定失败：%v", err)
+	}
+	login(enabled, password, "", http.StatusUnauthorized)
+	verified := readCookie(login(enabled, password, codes[0], http.StatusSeeOther))
+	request(enabled, http.MethodGet, "/v1/admin/me", nil, verified, http.StatusOK)
+	if _, err = disabled.ProvisionAdmin(ctx, email, newPassword, "", nil, true); err != nil {
+		t.Fatal(err)
+	}
+	request(enabled, http.MethodGet, "/v1/admin/me", nil, verified, http.StatusUnauthorized)
+	readCookie(login(enabled, newPassword, codes[1], http.StatusSeeOther))
+}

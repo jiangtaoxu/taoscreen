@@ -3,28 +3,79 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>TaoScreen 管理后台登录</title>
   <style nonce="{{.Nonce}}">
-    :root {font: 15px -apple-system, BlinkMacSystemFont, sans-serif; color: #182632; background: #f4f6f8}
-    * {box-sizing: border-box}
-    body {margin: 0; padding: 24px; min-height: 100vh; display: grid; place-items: center}
-    main {width: min(100%, 400px); padding: 28px; background: white; border: 1px solid #dce3e8; border-radius: 12px}
-    h1 {font-size: 23px; margin: 0 0 22px}
-    form {display: grid; gap: 14px}
-    label {display: grid; gap: 6px}
-    input, button {width: 100%; padding: 10px; font: inherit; border: 1px solid #cbd4db; border-radius: 8px}
-    button {background: #1d6578; color: white; cursor: pointer}
-    [role=alert] {color: #ae2732}
+    :root {
+      color-scheme: light;
+      --paper: #f7f8f5;
+      --ink: #1d302a;
+      --muted: #5b6b62;
+      --line: #dce3dc;
+      --green: #245a43;
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 20px;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      width: min(100%, 430px);
+      padding: 34px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 35px #1d302a0c;
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 20px; font-weight: 700; letter-spacing: -.5px; }
+    .mark { width: 36px; height: 36px; border-radius: 10px; background: var(--green); display: grid; place-items: center; }
+    .mark svg { width: 23px; height: 23px; }
+    h1 { font-size: 26px; line-height: 1.3; margin: 25px 0 20px; }
+    form { display: grid; gap: 16px; }
+    label { display: grid; gap: 6px; font-weight: 600; }
+    input, button { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font: inherit; border-radius: 8px; }
+    input { background: #fff; color: var(--ink); border: 1px solid #cbd6ce; }
+    :is(input, button):focus-visible { outline: 3px solid #609b77; outline-offset: 2px; }
+    small { color: var(--muted); font-size: 12px; font-weight: 400; }
+    button { margin-top: 4px; background: var(--green); color: white; border: 0; font-weight: 650; cursor: pointer; }
+    button:hover { background: #183e2e; }
+    [role=alert] { margin: 0 0 16px; padding: 10px 12px; border: 1px solid #efd5d2; border-radius: 8px; background: #fff5f3; color: #9b302e; }
+    @media (max-width: 480px) {
+      body { padding: 20px 16px; }
+      main { padding: 24px; }
+      input { font-size: 16px; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>TaoScreen 管理后台</h1>
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M8 10h8m-3-3 3 3-3 3"/></svg></span>
+      TaoScreen
+    </div>
+    <h1>管理后台登录</h1>
     {{if .Message}}<p role="alert">{{.Message}}</p>{{end}}
     <form action="/admin/login" method="post">
-      <label>管理员邮箱<input name="email" type="email" autocomplete="username" maxlength="254" required autofocus></label>
-      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
-      <label>动态码或恢复码<input name="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" maxlength="26" required></label>
+      <label>管理员邮箱
+        <input name="email" type="email" autocomplete="username" maxlength="254" required autofocus>
+      </label>
+      <label>密码
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      {{if .RequireTOTP}}
+      <label>动态码或恢复码
+        <input name="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" maxlength="26" required aria-describedby="code-hint">
+        <small id="code-hint">输入验证器显示的六位动态码，或使用一次性恢复码。</small>
+      </label>
+      {{end}}
       <button type="submit">登录</button>
     </form>
   </main>

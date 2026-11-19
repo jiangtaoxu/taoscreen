@@ -7,7 +7,7 @@ import (
 
 func baseline(t *testing.T) {
 	t.Helper()
-	for _, key := range []string{"DESKTOP_STUN_URLS", "DESKTOP_TURN_URLS", "DESKTOP_TURN_SECRET", "DESKTOP_RELEASE_ORIGIN", "DESKTOP_OAUTH_CALLBACK_SCHEME", "TRUSTED_PROXY_CIDRS", "CLOUDFLARE_PROXY_CIDRS", "ALLOW_PASSWORD_LOGIN", "ALLOW_SOCIAL_SIGNUP", "AUTH_PUBLIC_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "ADMIN_ACCESS_TEAM_DOMAIN", "ADMIN_ACCESS_AUD", "ADMIN_ALLOWED_EMAILS", "ADMIN_AUTH_MODE", "ADMIN_TOTP_KEY"} {
+	for _, key := range []string{"DESKTOP_STUN_URLS", "DESKTOP_TURN_URLS", "DESKTOP_TURN_SECRET", "DESKTOP_RELEASE_ORIGIN", "DESKTOP_OAUTH_CALLBACK_SCHEME", "TRUSTED_PROXY_CIDRS", "CLOUDFLARE_PROXY_CIDRS", "ALLOW_PASSWORD_LOGIN", "ALLOW_SOCIAL_SIGNUP", "AUTH_PUBLIC_URL", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "ADMIN_ACCESS_TEAM_DOMAIN", "ADMIN_ACCESS_AUD", "ADMIN_ALLOWED_EMAILS", "ADMIN_AUTH_MODE", "ADMIN_TOTP_ENABLED", "ADMIN_TOTP_KEY"} {
 		t.Setenv(key, "")
 	}
 	t.Setenv("APP_ENV", "test")
@@ -59,8 +59,23 @@ func TestAuthRequiresCompleteProvidersAndDedicatedAdminConfiguration(t *testing.
 		t.Fatal("本地模式不应接受无效的加密密钥")
 	}
 	t.Setenv("ADMIN_TOTP_KEY", base64.StdEncoding.EncodeToString(make([]byte, 32)))
-	if c, err := Load(); err != nil || c.Auth.AdminMode != "local" || c.Auth.AdminAccessEnabled() {
+	if c, err := Load(); err != nil || c.Auth.AdminMode != "local" || c.Auth.AdminAccessEnabled() || c.Auth.AdminTOTPDisabled {
 		t.Fatalf("本地管理模式未正确加载：%v", err)
+	}
+}
+
+func TestLocalAdminTOTPConfiguration(t *testing.T) {
+	baseline(t)
+	t.Setenv("ADMIN_AUTH_MODE", "local")
+	t.Setenv("ADMIN_TOTP_ENABLED", "false")
+	if c, err := Load(); err != nil || !c.Auth.AdminTOTPDisabled || len(c.Auth.AdminOTPKey) != 0 {
+		t.Fatalf("关闭动态码时应允许不配置加密密钥：%v", err)
+	}
+	for _, value := range []string{"true", "typo"} {
+		t.Setenv("ADMIN_TOTP_ENABLED", value)
+		if _, err := Load(); err == nil {
+			t.Fatalf("不应接受无密钥或无效开关配置：%s", value)
+		}
 	}
 }
 

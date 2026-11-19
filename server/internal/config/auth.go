@@ -23,6 +23,7 @@ type Auth struct {
 	AdminTeamDomain, AdminAudience string
 	AdminEmails                    map[string]bool
 	AdminMode                      string
+	AdminTOTPDisabled              bool
 	AdminOTPKey                    []byte
 }
 
@@ -103,11 +104,18 @@ func loadAuth(env string) (Auth, error) {
 		if accessConfigured {
 			return a, errors.New("启用本地管理后台时请移除 Cloudflare Access 管理员配置")
 		}
-		key, err := base64.StdEncoding.Strict().DecodeString(os.Getenv("ADMIN_TOTP_KEY"))
-		if err != nil || len(key) != 32 {
-			return a, errors.New("ADMIN_TOTP_KEY 必须是 32 字节随机密钥的 Base64 编码")
+		switch os.Getenv("ADMIN_TOTP_ENABLED") {
+		case "", "true":
+			key, err := base64.StdEncoding.Strict().DecodeString(os.Getenv("ADMIN_TOTP_KEY"))
+			if err != nil || len(key) != 32 {
+				return a, errors.New("ADMIN_TOTP_KEY 必须是 32 字节随机密钥的 Base64 编码")
+			}
+			a.AdminOTPKey = key
+		case "false":
+			a.AdminTOTPDisabled = true
+		default:
+			return a, errors.New("ADMIN_TOTP_ENABLED 必须为 true 或 false")
 		}
-		a.AdminOTPKey = key
 	case "cloudflare_access":
 	default:
 		return a, errors.New("ADMIN_AUTH_MODE 必须为 disabled、local 或 cloudflare_access")

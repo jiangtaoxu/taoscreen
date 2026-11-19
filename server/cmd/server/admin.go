@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/boombuler/barcode/qr"
+	"github.com/pquerna/otp"
 	"golang.org/x/term"
 	"taoscreen.local/server/internal/httpapi"
 )
@@ -22,9 +23,13 @@ func provisionAdmin(api *httpapi.Server, email string, reset bool) error {
 	if !term.IsTerminal(fd) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		return errors.New("请在交互终端中创建或重置管理员")
 	}
-	key, err := httpapi.NewAdminAuthenticator(email)
-	if err != nil {
-		return err
+	var key *otp.Key
+	var err error
+	if !api.Config.Auth.AdminTOTPDisabled {
+		key, err = httpapi.NewAdminAuthenticator(email)
+		if err != nil {
+			return err
+		}
 	}
 	password, err := readTerminalPassword("输入管理员密码（至少 12 个字符）：")
 	if err != nil {
@@ -37,21 +42,28 @@ func provisionAdmin(api *httpapi.Server, email string, reset bool) error {
 	if confirmation != password {
 		return errors.New("两次输入的密码不一致")
 	}
-	fmt.Println("用验证器扫描下方二维码，也可以手工输入绑定密钥。")
-	if err = printTerminalQR(key.URL()); err != nil {
-		return err
-	}
-	fmt.Println("绑定密钥（请勿分享）", key.Secret())
-	fmt.Fprint(os.Stderr, "输入验证器显示的六位动态码：")
-	code, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil {
-		return err
+	var code string
+	if key != nil {
+		fmt.Println("用验证器扫描下方二维码，也可以手工输入绑定密钥。")
+		if err = printTerminalQR(key.URL()); err != nil {
+			return err
+		}
+		fmt.Println("绑定密钥（请勿分享）", key.Secret())
+		fmt.Fprint(os.Stderr, "输入验证器显示的六位动态码：")
+		code, err = bufio.NewReader(os.Stdin).ReadString('\n')
+		if err != nil {
+			return err
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	codes, err := api.ProvisionAdmin(ctx, email, password, strings.TrimSpace(code), key, reset)
 	if err != nil {
 		return err
+	}
+	if len(codes) == 0 {
+		fmt.Println("管理员密码已设置。")
+		return nil
 	}
 	fmt.Println("绑定完成。请离线保存以下一次性恢复码。后台登录时请使用下一组动态码。")
 	for _, recovery := range codes {

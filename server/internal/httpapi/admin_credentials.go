@@ -62,27 +62,37 @@ func (s *Server) ProvisionAdmin(ctx context.Context, email, password, code strin
 	if err != nil {
 		return nil, err
 	}
-	step, valid := adminCodeStep(code, key.Secret(), time.Now())
-	if !valid {
-		return nil, errors.New("动态码无效，请检查验证器时间并重新执行命令")
-	}
 	passwordHash, err := HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
-	aead, err := s.adminOTPEncryption()
-	if err != nil {
-		return nil, err
-	}
-	secret := aead.Seal(nil, nil, []byte(key.Secret()), []byte(email))
-	codes := make([]string, 8)
-	encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
-	for i := range codes {
-		var random [16]byte
-		if _, err = rand.Read(random[:]); err != nil {
+	bindTOTP := !s.Config.Auth.AdminTOTPDisabled
+	var secret []byte
+	var lastStep *int64
+	var codes []string
+	if bindTOTP {
+		if key == nil {
+			return nil, errors.New("请先绑定管理员动态码")
+		}
+		step, valid := adminCodeStep(code, key.Secret(), time.Now())
+		if !valid {
+			return nil, errors.New("动态码无效，请检查验证器时间并重新执行命令")
+		}
+		lastStep = &step
+		aead, err := s.adminOTPEncryption()
+		if err != nil {
 			return nil, err
 		}
-		codes[i] = encoding.EncodeToString(random[:])
+		secret = aead.Seal(nil, nil, []byte(key.Secret()), []byte(email))
+		codes = make([]string, 8)
+		encoding := base32.StdEncoding.WithPadding(base32.NoPadding)
+		for i := range codes {
+			var random [16]byte
+			if _, err = rand.Read(random[:]); err != nil {
+				return nil, err
+			}
+			codes[i] = encoding.EncodeToString(random[:])
+		}
 	}
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
@@ -91,24 +101,28 @@ func (s *Server) ProvisionAdmin(ctx context.Context, email, password, code strin
 	defer tx.Rollback(ctx)
 	admin := uuid.NewString()
 	if reset {
-		err = tx.QueryRow(ctx, `UPDATE local_admins SET password_hash=$2,totp_ciphertext=$3,last_totp_step=$4
-			WHERE email=$1 RETURNING id::text`, email, passwordHash, secret, step).Scan(&admin)
+		err = tx.QueryRow(ctx, `UPDATE local_admins SET password_hash=$2,
+			totp_ciphertext=CASE WHEN $3 THEN $4::bytea ELSE totp_ciphertext END,
+			last_totp_step=CASE WHEN $3 THEN $5::bigint ELSE last_totp_step END
+			WHERE email=$1 RETURNING id::text`, email, passwordHash, bindTOTP, secret, lastStep).Scan(&admin)
 		if err != nil {
 			return nil, errors.New("重置管理员失败，请检查账号和数据库状态")
 		}
 		if _, err = tx.Exec(ctx, "DELETE FROM local_admin_sessions WHERE admin_id=$1", admin); err != nil {
 			return nil, err
 		}
-		if _, err = tx.Exec(ctx, "DELETE FROM local_admin_recovery_codes WHERE admin_id=$1", admin); err != nil {
-			return nil, err
+		if bindTOTP {
+			if _, err = tx.Exec(ctx, "DELETE FROM local_admin_recovery_codes WHERE admin_id=$1", admin); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		_, err = tx.Exec(ctx, "INSERT INTO local_admins(id,email,password_hash,totp_ciphertext,last_totp_step) VALUES($1,$2,$3,$4,$5)",
-			admin, email, passwordHash, secret, step)
+			admin, email, passwordHash, secret, lastStep)
 		if err != nil {
 			var conflict *pgconn.PgError
 			if errors.As(err, &conflict) && conflict.Code == "23505" {
-				return nil, errors.New("该管理员已存在，可使用 reset-admin 重新绑定")
+				return nil, errors.New("该管理员已存在，可使用 reset-admin 重置")
 			}
 			return nil, err
 		}
