@@ -1,5 +1,7 @@
 # TaoScreen 服务端
 
+[返回项目首页](../README.md) · [自托管部署指南](../docs/deployment.md) · [macOS 客户端说明](../macos/README.md)
+
 TaoScreen（涛子远程桌面）的账号、设备会话和信令服务。
 
 独立 Go 模块 `taoscreen.local/server`，Go 1.26.11。媒体与文件通过 WebRTC 传输。
@@ -15,7 +17,7 @@ make check
 make integration
 ```
 
-Compose 项目名固定为 `taoscreen-local`，全新数据库与卷，不连接原 Berth。API 仅绑定宿主机回环 28080 端口。停止用 `docker compose down`，保留数据库卷。不执行 `down -v` 或重建数据库。
+Compose 项目名固定为 `taoscreen-local`，使用独立 PostgreSQL 数据库与持久化卷。API 仅绑定宿主机回环 `127.0.0.1:28080` 端口。停止用 `docker compose down`，保留数据库卷。请勿误执行 `down -v` 清空数据库。
 
 测试使用独立随机账号。`make integration` 使用 Python 标准库和真实 WebSocket，含约 85 秒的失联回收检查；只能指向此本地开发实例。默认地址为 `http://127.0.0.1:28080`，可通过 `TAOSCREEN_TEST_URL` 显式指定本地测试服务。
 
@@ -37,7 +39,7 @@ Compose 项目名固定为 `taoscreen-local`，全新数据库与卷，不连接
 - `ALLOW_PASSWORD_LOGIN` 控制普通用户邮箱密码登录。生产环境关闭 `ALLOW_REGISTRATION`。独立的 `ALLOW_SOCIAL_SIGNUP` 控制首次 OAuth 登录是否自动创建账号。
 - `ADMIN_AUTH_MODE` 可选 `local`、`cloudflare_access` 或 `disabled`。本地模式通过 `ADMIN_TOTP_ENABLED` 配置动态验证码，默认 `true`，开启时需要 `ADMIN_TOTP_KEY`。Access 模式需要独立团队域名、应用 AUD 和管理员邮箱白名单。
 
-数据库迁移显式运行 `server migrate`，使用 `MIGRATION_DATABASE_URL`；Compose 已串联迁移和就绪检查。初始迁移与原 Berth 不同，误连既有 Berth 数据库时会因迁移校验失败而拒绝运行。
+数据库迁移显式运行 `server migrate`，使用 `MIGRATION_DATABASE_URL`；Compose 已串联迁移和就绪检查。启动时会校验内置迁移记录，若误连不兼容的既有数据库会主动拒绝启动以防数据损坏。
 
 ## API
 
@@ -45,6 +47,7 @@ Compose 项目名固定为 `taoscreen-local`，全新数据库与卷，不连接
 
 | 接口 | 用途 |
 | --- | --- |
+| `/`、`/admin`、`/admin/login` | 自托管管理员控制台与本地管理员登录页 |
 | `GET /download` | 公开下载页，展示两种 Mac 芯片的最新发布版本、下载按钮及更新说明 |
 | `GET /health/live`、`GET /health/ready` | 存活与数据库/Redis/迁移就绪；ready 返回 `service=taoscreen` |
 | `GET /v1/auth/providers` | 登录方式的启用状态 |
@@ -52,10 +55,13 @@ Compose 项目名固定为 `taoscreen-local`，全新数据库与卷，不连接
 | `POST /v1/admin/users` | 本地管理员创建普通账号 |
 | `POST /v1/auth/refresh`、`/logout` | 刷新轮换、退出并撤销当前登录 |
 | `GET /v1/me`、`GET /v1/sessions`、`DELETE /v1/sessions/{id}` | 账号信息、设备会话与撤销 |
-| `GET /v1/desktop/updates/latest` | 无需登录，按平台、架构和当前版本获取 R2 最新发布信息 |
+| `GET /v1/desktop/updates/latest` | 无需登录，按平台、架构和当前版本获取最新发布信息 |
 | `GET /v1/desktop/config` | STUN/TURN 配置，TURN 凭据两小时有效 |
 | `GET /v1/desktop/peers` | 同账号在线桌面设备 |
-| `GET /v1/desktop/signal` | 唯一设备信令 WebSocket，邀请/授权/SDP/ICE/恢复/续期 |
+| `GET /v1/desktop/signal` | 唯一桌面设备信令 WebSocket，邀请/授权/SDP/ICE/恢复/续期 |
+| `GET /v1/ports/config` | 独立端口映射的 STUN/TURN 配置 |
+| `GET /v1/ports/peers` | 同账号且独立端口服务在线的设备 |
+| `GET /v1/ports/signal` | 独立端口转发信令 WebSocket |
 
 协议详情见 `docs/remote-desktop.md`，OpenAPI 契约见 `api/openapi.json`。
 

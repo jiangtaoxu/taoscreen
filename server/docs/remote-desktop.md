@@ -1,8 +1,8 @@
 # 独立桌面协议
 
-本服务使用自己的 PostgreSQL 账号、设备会话、第三方身份与短期登录事务表，以及独立 Redis；不包含笔记、手机远程或 Mac 项目镜像。
+本服务使用自己的 PostgreSQL 账号、设备会话、第三方身份与短期登录事务表，以及独立 Redis。
 
-2026-11-01 更新：普通用户通过 Google/GitHub 授权，取得的仍是 TaoDesk 自己的不透明会话令牌。密码 API 仅在显式开启的开发测试环境保留。完整接入说明见 `authentication.md`。
+普通用户通过邮箱密码（生产开启 `ALLOW_PASSWORD_LOGIN=true` 时）或 Google / GitHub 授权，取得的均为 TaoScreen 自己的不透明会话令牌。HTTP 自助注册仅在显式开启的非生产环境保留。完整接入说明见 [登录与管理员后台](authentication.md)。
 
 ## 认证
 
@@ -10,7 +10,7 @@
 
 登录返回 `user_id`、`device_id`、`session_id`、`access_token`、`refresh_token`、`token_type=Bearer`、`access_expires_at` 和 `refresh_expires_at`。访问令牌有效期最长 15 分钟，会话最长 30 天；刷新请求仅带 `refresh_token` 并轮换两个令牌。重放旧刷新令牌撤销整条登录。令牌只以摘要存储。
 
-鉴权 API 使用 `Authorization: Bearer <access_token>`，HTTP 重定向不用于登录；独立客户端在发送密码前检查 `/health/ready` 的 `service=taozird`。`GET /v1/me` 返回账号 `id`、`email`、`service`、`protocol_version`。
+鉴权 API 使用 `Authorization: Bearer <access_token>`，HTTP 重定向不用于登录；独立客户端在发送凭据前检查 `/health/ready` 的 `service=taoscreen`。`GET /v1/me` 返回账号 `id`、`email`、`service`、`protocol_version`。
 
 ## 桌面 API
 
