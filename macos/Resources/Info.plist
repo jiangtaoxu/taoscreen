@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>TaoScreen</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleName</key>
+	<string>TaoScreen</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.19</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(TAOSCREEN_OAUTH_CALLBACK_SCHEME)</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>100000019</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>在你允许时共享 Mac 系统声音，不采集麦克风。</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>发现并直连附近的 Mac，或通过本地网络建立账号连接与端口映射。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_taoscreen._tcp</string>
+	</array>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>按你授权的连接共享所选屏幕。</string>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>$(TAOSCREEN_UPDATE_FEED_URL)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>SUPublicEDKey</key>
+	<string>$(TAOSCREEN_UPDATE_PUBLIC_KEY)</string>
+	<key>TaoScreenDefaultServerURL</key>
+	<string>$(TAOSCREEN_DEFAULT_SERVER_URL)</string>
+</dict>
+</plist>

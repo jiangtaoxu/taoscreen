@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TaoScreen · 用户管理</title>
+<style nonce="{{nonce}}">:root{color-scheme:light;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#182632;background:#f4f6f8}*{box-sizing:border-box}body{margin:0}header{background:#142a3b;color:white;padding:25px max(28px,calc((100vw - 1180px)/2));display:flex;justify-content:space-between;align-items:center}h1{font-size:24px;margin:0}header small{display:block;color:#b6c7d5;margin-top:7px}main{max-width:1240px;margin:28px auto;padding:0 28px}.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}input{padding:12px;border:1px solid #cbd4db;border-radius:8px;font:inherit;min-width:280px}button{font:inherit;padding:11px 17px;border:0;border-radius:8px;cursor:pointer;background:#1d6578;color:white}button:disabled{opacity:.45;cursor:default}.secondary{background:#e5ebef;color:#203849}#status{min-height:24px;color:#536978;margin:16px 0}.table-wrap{overflow:auto;background:white;border:1px solid #dce3e8;border-radius:12px}table{width:100%;border-collapse:collapse;white-space:nowrap;text-align:left}th,td{padding:15px;border-bottom:1px solid #e9edf1}th{font-weight:600;color:#617383;font-size:13px;background:#fafbfd}tbody tr:hover{background:#f8fbfc}td button{padding:6px 12px}.pager{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;align-items:center}.note{color:#687b88;font-size:13px;line-height:1.8}dialog{border:1px solid #d3dde5;border-radius:12px;padding:24px;max-width:800px;width:90%}dialog::backdrop{background:#142a3b66}pre{white-space:pre-wrap;word-break:break-all;background:#f4f6f8;padding:16px;border-radius:8px;font:13px/1.7 ui-monospace,monospace}dialog h2{margin-top:0}#admin{font-size:13px;color:#d6e2eb}</style></head>
+<body><header><div><h1>TaoScreen</h1><small>用户与注册信息</small></div><div><span id="admin">正在验证管理员…</span><form id="logout" action="/admin/logout" method="post" hidden><button class="secondary">退出后台</button></form></div></header><main>
+<div class="bar"><input id="query" aria-label="搜索用户" placeholder="搜索邮箱、昵称或用户 ID"><button id="search">搜索</button><button id="refresh" class="secondary">刷新</button></div>
+<details id="create-account" hidden>
+<summary>创建本地账号</summary>
+<form id="create-user" class="bar" action="/v1/admin/users" method="post">
+<label>邮箱 <input name="email" type="email" autocomplete="off" maxlength="254" required></label>
+<label>初始密码 <input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
+<button type="submit">创建账号</button>
+</form>
+<p id="create-status" role="status"></p>
+</details>
+<p id="status" role="status">正在加载用户…</p><div class="table-wrap"><table><thead><tr><th>用户</th><th>注册来源</th><th>注册时间</th><th>最近登录</th><th>设备 / 有效会话</th><th></th></tr></thead><tbody id="users"></tbody></table></div>
+<div class="pager"><button id="previous" class="secondary">上一页</button><span id="page"></span><button id="next" class="secondary">下一页</button></div>
+<p class="note">管理后台用于管理用户账号。管理员身份与远程连接权限独立。</p>
+<dialog id="details"><h2>账号详情</h2><div id="detail-content"></div><button id="close">关闭</button></dialog></main>
+<script nonce="{{nonce}}">'use strict';const $=id=>document.getElementById(id);let offset=0,total=0;const limit=50;const provider=p=>({google:'Google',github:'GitHub',password:'本地账号'}[p]||p);const date=v=>v?new Date(v).toLocaleString():'—';
+async function api(path, options={}){const r=await fetch(path,{credentials:'same-origin',...options,headers:{Accept:'application/json',...options.headers}});if(!r.headers.get('content-type')?.includes('application/json'))throw Error('后台登录可能已过期，请重新打开后台登录。');const body=await r.json();if(!r.ok)throw Error(body.error?.message||'请求失败');return body}
+function cell(row,text){const td=document.createElement('td');td.textContent=text;row.append(td);return td}
+async function load(){ $('status').textContent='正在加载用户…';$('search').disabled=true;try{const data=await api('/v1/admin/users?'+new URLSearchParams({q:$('query').value,limit,offset}));total=data.total;$('users').replaceChildren();for(const u of data.users){const row=document.createElement('tr');const name=cell(row,'');const title=document.createElement('strong');title.textContent=u.name||u.email;name.append(title,document.createElement('br'),document.createTextNode(u.email));cell(row,provider(u.registration_provider));cell(row,date(u.created_at));cell(row,date(u.last_login_at));cell(row,u.device_count+' / '+u.active_sessions);const action=cell(row,'');const b=document.createElement('button');b.textContent='详情';b.addEventListener('click',()=>details(u.id));action.append(b);$('users').append(row)}$('status').textContent=total?'共 '+total+' 位用户':'暂无匹配的用户';$('page').textContent=total?String(offset+1)+'–'+Math.min(offset+limit,total):'0';$('previous').disabled=offset===0;$('next').disabled=offset+limit>=total}catch(e){$('status').textContent=e.message}finally{$('search').disabled=false}}
+async function details(id){try{const d=await api('/v1/admin/users/'+encodeURIComponent(id));const u=d.user;const view={用户ID:u.id,邮箱:u.email,昵称:u.name,邮箱已验证:u.email_verified,注册来源:provider(u.registration_provider),注册时间:date(u.created_at),最近登录:date(u.last_login_at),设备数:u.device_count,有效会话数:u.active_sessions,绑定登录方式:d.identities.map(i=>({来源:provider(i.provider),邮箱:i.email,昵称:i.name,绑定时间:date(i.created_at),最近登录:date(i.last_login_at)}))};const pre=document.createElement('pre');pre.textContent=JSON.stringify(view,null,2);$('detail-content').replaceChildren(pre);$('details').showModal()}catch(e){$('status').textContent=e.message}}
+$('search').addEventListener('click',()=>{offset=0;load()});$('refresh').addEventListener('click',load);$('query').addEventListener('keydown',e=>{if(e.key==='Enter'){offset=0;load()}});$('previous').addEventListener('click',()=>{offset=Math.max(0,offset-limit);load()});$('next').addEventListener('click',()=>{offset+=limit;load()});$('close').addEventListener('click',()=>$('details').close());api('/v1/admin/me').then(m=>{$('admin').textContent=m.email;$('logout').hidden=m.authentication!=='local';$('create-account').hidden=m.read_only;load()}).catch(e=>{$('status').textContent=e.message;$('admin').textContent='未登录'});
+$('create-user').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;
+  const button=form.querySelector('button');
+  button.disabled=true;
+  $('create-status').textContent='';
+  try{
+    await api('/v1/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});
+    form.reset();
+    $('create-status').textContent='已创建账号。';
+    await load();
+  }catch(e){$('create-status').textContent=e.message}
+  finally{button.disabled=false}
+});
+</script></body></html>

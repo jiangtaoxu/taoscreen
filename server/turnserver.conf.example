@@ -1,0 +1,38 @@
+# 复制到实际 coturn 配置后替换占位值；不要将填入密钥的文件提交 Git。
+listening-port=3478
+tls-listening-port=5349
+min-port=49160
+max-port=49260
+realm=turn.example.com
+server-name=turn.example.com
+fingerprint
+use-auth-secret
+static-auth-secret=REPLACE_WITH_SAME_RANDOM_SECRET_AS_DESKTOP_TURN_SECRET
+# 有公网/私网 NAT 映射时填写 external-ip=PUBLIC_IP/PRIVATE_IP
+# external-ip=203.0.113.10/10.0.0.10
+cert=/etc/turn/tls/fullchain.pem
+pkey=/etc/turn/tls/privkey.pem
+no-tlsv1
+no-tlsv1_1
+no-cli
+no-multicast-peers
+no-tcp-relay
+user-quota=4
+total-quota=100
+# 每条会话的字节/秒上限与总容量，按预计并发及链路调整。
+max-bps=2500000
+bps-capacity=50000000
+stale-nonce=600
+denied-peer-ip=0.0.0.0-0.255.255.255
+denied-peer-ip=10.0.0.0-10.255.255.255
+denied-peer-ip=100.64.0.0-100.127.255.255
+denied-peer-ip=127.0.0.0-127.255.255.255
+denied-peer-ip=169.254.0.0-169.254.255.255
+denied-peer-ip=172.16.0.0-172.31.255.255
+denied-peer-ip=192.168.0.0-192.168.255.255
+denied-peer-ip=224.0.0.0-255.255.255.255
+denied-peer-ip=::
+denied-peer-ip=::1
+denied-peer-ip=fc00::-fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+denied-peer-ip=fe80::-febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff
+log-file=stdout

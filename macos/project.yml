@@ -1,0 +1,43 @@
+name: TaoScreen
+options:
+  bundleIdPrefix: org.taoscreen
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  WebRTC:
+    url: https://github.com/stasel/WebRTC.git
+    exactVersion: 154.0.0
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
+targets:
+  TaoScreen:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources/TaoScreen
+      - path: WebRTC-LICENSE.txt
+        buildPhase: resources
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    dependencies:
+      - package: WebRTC
+        product: WebRTC
+      - package: Sparkle
+        product: Sparkle
+    settings:
+      base:
+        PRODUCT_NAME: TaoScreen
+        PRODUCT_BUNDLE_IDENTIFIER: org.taoscreen.development
+        TAOSCREEN_OAUTH_CALLBACK_SCHEME: taoscreen
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Resources/Info.plist
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+    scheme:
+      gatherCoverageData: false

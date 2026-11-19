@@ -1,0 +1,574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		24A5B0EB1DC28850F0B3ABC2 /* CloudJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D9394C1208E3ED1B916708 /* CloudJSON.swift */; };
+		28EDA4C4C4919DE0492569D9 /* DesktopFileHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6468C6ADF9F7C425873B137 /* DesktopFileHelpers.swift */; };
+		2F3DE0B5049BD3DE7BBCA921 /* DesktopDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F66111086D1CE95A29008F /* DesktopDirectService.swift */; };
+		3022B033982F8F4198E626E7 /* WebRTC-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = EB3D222432C1EC7A82F041E7 /* WebRTC-LICENSE.txt */; };
+		328CCB9FEAFAF3427E4141E4 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 4536110987BE42E717BE3078 /* WebRTC */; };
+		37FCC726641AD6A7D35D937E /* DesktopOAuthLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090A013BFD01F9D87F7622F8 /* DesktopOAuthLogin.swift */; };
+		3F07357CCAF8748092EA6098 /* DesktopPortForwardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D592C736F3C9072D397B8F /* DesktopPortForwardingView.swift */; };
+		419BC4A4B753694A18199221 /* DesktopRemoteSecurityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1579A243968C5EBA92860A95 /* DesktopRemoteSecurityView.swift */; };
+		478E2C92BCF5E8CAEC420460 /* DesktopInputDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C9D38FA76E937BA80A9AD0D /* DesktopInputDiagnostics.swift */; };
+		4791E6649902B8BEE2093927 /* AccountTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36D27A711237CFA3EB2B7ACD /* AccountTypes.swift */; };
+		4AEE9475952F5BEC0E085CAB /* DesktopCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14703D864EBCE3658B11CB53 /* DesktopCapture.swift */; };
+		4B9559C2D1EB8EABC9FF1B3E /* RemoteAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = E129B417A3135521935DE3CA /* RemoteAvailability.swift */; };
+		4D35EF94B8275A8BB3A96BCC /* DesktopPortSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC82CDD925DC235ACBC73529 /* DesktopPortSession.swift */; };
+		4D6BCB81EA74D5FE8E9E79EC /* DesktopFileReturnPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04EE4B0B1A5E17CE7FB689BD /* DesktopFileReturnPanel.swift */; };
+		4E9DB6DB4B8EC5D1734D21F4 /* DesktopDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76C3C11C91DE4F47ACFB5A6 /* DesktopDrop.swift */; };
+		4F0FA4031072DF487677AAC2 /* DesktopPortForwarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE35AF660F2A56A3A3EF027 /* DesktopPortForwarding.swift */; };
+		5D94A1F8DBBD5FD1DCA49DF0 /* DesktopNativeDrag.swift in Sources */ = {isa = PBXBuildFile; fileRef = A075650BB2BA71103F99F924 /* DesktopNativeDrag.swift */; };
+		7932645207F454BDEB876E12 /* DesktopDirectTrust.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482ED5D2B8970291B7A70C44 /* DesktopDirectTrust.swift */; };
+		814ECD35D96C5FE88F0BCA9E /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 929D26CD8C846E607AB9D427 /* Sparkle */; };
+		845AC05FEAAA2F2E4368275C /* DesktopAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75392AD840636B8B534BB4A2 /* DesktopAPI.swift */; };
+		8B6DD200B865A41430EE09F5 /* DesktopDirectTLS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27E859E282119872F3FF50F1 /* DesktopDirectTLS.swift */; };
+		8BADE21AC0F2C546EEFF924B /* DesktopRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82B974EA0939275138D0E239 /* DesktopRuntime.swift */; };
+		8D0C40D107953427EBAD162F /* DesktopVideoSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9CDB31AFC7FA6F17FF484D /* DesktopVideoSettings.swift */; };
+		8EE74B808289A0DBFD32366A /* DesktopPortForwardingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B10B1284F4D9496DE58D0B0 /* DesktopPortForwardingModels.swift */; };
+		950070CDCE61B5B632504003 /* DesktopPermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F853F0B190C04A2243295C8E /* DesktopPermissions.swift */; };
+		953D70BC1D60C8922ED68A8E /* DesktopPortUDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F26075BA5A472C53338153E /* DesktopPortUDP.swift */; };
+		9632181D4FD4BF30C7E032C9 /* DesktopAccountState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */; };
+		9F1BCC24B71E751E556D4034 /* DesktopModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */; };
+		A016DA788CAB7DFD543BD7B7 /* DesktopRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2B7CED1A4BFEC42307491B /* DesktopRTC.swift */; };
+		A22ACF1DFFEA81DCE0A617D6 /* DesktopPortService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B073A16E24E13119920800E8 /* DesktopPortService.swift */; };
+		A6E2360ED7BF2E074F43D0B9 /* DesktopFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6554A8E31C37E544E8532089 /* DesktopFiles.swift */; };
+		A77FADA5F98332C1542D8C68 /* DesktopDirectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B01CA5D2ACCC8EB650477D0 /* DesktopDirectView.swift */; };
+		BA876965894BE62BBA96402B /* DesktopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4EF764EABAF0C23B093E3DF /* DesktopView.swift */; };
+		CB90EE7517498340E97E07C0 /* DesktopSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE5E5524AC6EEED11E1A99B1 /* DesktopSessionState.swift */; };
+		D30A30D3DA3BA3A9D91E7AD8 /* DesktopClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43AD55962EFC6C425F9B171 /* DesktopClipboard.swift */; };
+		D4B9660B729162F75B3EB2BA /* TaoScreenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97FFBD95A4C75052F667FF87 /* TaoScreenApp.swift */; };
+		D5572EC9E06D12DEB8E9F509 /* DesktopCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */; };
+		DD6DD3391E9208D7D9E68D6D /* DesktopPortWindowCloseGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */; };
+		E68BB1A05BB9205875F83D80 /* DesktopPrivacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E9ED68056A6AFE2AA3A7F4 /* DesktopPrivacy.swift */; };
+		EAAD58FFAA0F5C2685E6B878 /* DesktopUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4962CC279D7C28D68A154F8D /* DesktopUpdates.swift */; };
+		EB5C6C3AF1B49B50F1F3343E /* DesktopRemoteSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */; };
+		FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 53CA7A24A877328AB638E714 /* AppIcon.icns */; };
+		FCB7711D53EF5D00436E0916 /* DesktopPrivacyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58A61391F84E58B336A6A1BC /* DesktopPrivacyView.swift */; };
+		FCDDFDD9B3B114DB2ECA6697 /* DesktopMacControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06EC7029CFABDCA483B68321 /* DesktopMacControls.swift */; };
+		FF26A82FFAB67F2F5BBCC654 /* DesktopPortMappingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B627A2910ECDCC0A022AD0 /* DesktopPortMappingModels.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		04EE4B0B1A5E17CE7FB689BD /* DesktopFileReturnPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFileReturnPanel.swift; sourceTree = "<group>"; };
+		06EC7029CFABDCA483B68321 /* DesktopMacControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMacControls.swift; sourceTree = "<group>"; };
+		090A013BFD01F9D87F7622F8 /* DesktopOAuthLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopOAuthLogin.swift; sourceTree = "<group>"; };
+		122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopModels.swift; sourceTree = "<group>"; };
+		14703D864EBCE3658B11CB53 /* DesktopCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCapture.swift; sourceTree = "<group>"; };
+		1579A243968C5EBA92860A95 /* DesktopRemoteSecurityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRemoteSecurityView.swift; sourceTree = "<group>"; };
+		1C9D38FA76E937BA80A9AD0D /* DesktopInputDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopInputDiagnostics.swift; sourceTree = "<group>"; };
+		27E859E282119872F3FF50F1 /* DesktopDirectTLS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectTLS.swift; sourceTree = "<group>"; };
+		2F26075BA5A472C53338153E /* DesktopPortUDP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortUDP.swift; sourceTree = "<group>"; };
+		36D27A711237CFA3EB2B7ACD /* AccountTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountTypes.swift; sourceTree = "<group>"; };
+		3B01CA5D2ACCC8EB650477D0 /* DesktopDirectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectView.swift; sourceTree = "<group>"; };
+		482ED5D2B8970291B7A70C44 /* DesktopDirectTrust.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectTrust.swift; sourceTree = "<group>"; };
+		4962CC279D7C28D68A154F8D /* DesktopUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopUpdates.swift; sourceTree = "<group>"; };
+		50B627A2910ECDCC0A022AD0 /* DesktopPortMappingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortMappingModels.swift; sourceTree = "<group>"; };
+		53CA7A24A877328AB638E714 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortWindowCloseGuard.swift; sourceTree = "<group>"; };
+		58A61391F84E58B336A6A1BC /* DesktopPrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPrivacyView.swift; sourceTree = "<group>"; };
+		6554A8E31C37E544E8532089 /* DesktopFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFiles.swift; sourceTree = "<group>"; };
+		7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCenter.swift; sourceTree = "<group>"; };
+		75392AD840636B8B534BB4A2 /* DesktopAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopAPI.swift; sourceTree = "<group>"; };
+		82B974EA0939275138D0E239 /* DesktopRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRuntime.swift; sourceTree = "<group>"; };
+		83E26820F2703C1AA8DCA661 /* TaoScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaoScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FE35AF660F2A56A3A3EF027 /* DesktopPortForwarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwarding.swift; sourceTree = "<group>"; };
+		97FFBD95A4C75052F667FF87 /* TaoScreenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaoScreenApp.swift; sourceTree = "<group>"; };
+		99F66111086D1CE95A29008F /* DesktopDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectService.swift; sourceTree = "<group>"; };
+		9B10B1284F4D9496DE58D0B0 /* DesktopPortForwardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwardingModels.swift; sourceTree = "<group>"; };
+		A075650BB2BA71103F99F924 /* DesktopNativeDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNativeDrag.swift; sourceTree = "<group>"; };
+		A4EF764EABAF0C23B093E3DF /* DesktopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopView.swift; sourceTree = "<group>"; };
+		A5D592C736F3C9072D397B8F /* DesktopPortForwardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwardingView.swift; sourceTree = "<group>"; };
+		B073A16E24E13119920800E8 /* DesktopPortService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortService.swift; sourceTree = "<group>"; };
+		B1D9394C1208E3ED1B916708 /* CloudJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudJSON.swift; sourceTree = "<group>"; };
+		CB9CDB31AFC7FA6F17FF484D /* DesktopVideoSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopVideoSettings.swift; sourceTree = "<group>"; };
+		CE5E5524AC6EEED11E1A99B1 /* DesktopSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopSessionState.swift; sourceTree = "<group>"; };
+		CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopAccountState.swift; sourceTree = "<group>"; };
+		D43AD55962EFC6C425F9B171 /* DesktopClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopClipboard.swift; sourceTree = "<group>"; };
+		D5E9ED68056A6AFE2AA3A7F4 /* DesktopPrivacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPrivacy.swift; sourceTree = "<group>"; };
+		DC2B7CED1A4BFEC42307491B /* DesktopRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRTC.swift; sourceTree = "<group>"; };
+		DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRemoteSecurity.swift; sourceTree = "<group>"; };
+		E129B417A3135521935DE3CA /* RemoteAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteAvailability.swift; sourceTree = "<group>"; };
+		E6468C6ADF9F7C425873B137 /* DesktopFileHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFileHelpers.swift; sourceTree = "<group>"; };
+		EB3D222432C1EC7A82F041E7 /* WebRTC-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WebRTC-LICENSE.txt"; sourceTree = "<group>"; };
+		EC82CDD925DC235ACBC73529 /* DesktopPortSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortSession.swift; sourceTree = "<group>"; };
+		F76C3C11C91DE4F47ACFB5A6 /* DesktopDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDrop.swift; sourceTree = "<group>"; };
+		F853F0B190C04A2243295C8E /* DesktopPermissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPermissions.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C4F43B964BE51847021041CE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				328CCB9FEAFAF3427E4141E4 /* WebRTC in Frameworks */,
+				814ECD35D96C5FE88F0BCA9E /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D773F133929727ADC9A9903 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				83E26820F2703C1AA8DCA661 /* TaoScreen.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		12240CAD1D6C85052C990057 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				82B974EA0939275138D0E239 /* DesktopRuntime.swift */,
+				E129B417A3135521935DE3CA /* RemoteAvailability.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		17738A8417BF260B6875DBB9 /* Updates */ = {
+			isa = PBXGroup;
+			children = (
+				4962CC279D7C28D68A154F8D /* DesktopUpdates.swift */,
+			);
+			path = Updates;
+			sourceTree = "<group>";
+		};
+		2CFE17A8E3F82A039E222F6E /* Files */ = {
+			isa = PBXGroup;
+			children = (
+				E6468C6ADF9F7C425873B137 /* DesktopFileHelpers.swift */,
+			);
+			path = Files;
+			sourceTree = "<group>";
+		};
+		58521128D6A2737F954CB915 = {
+			isa = PBXGroup;
+			children = (
+				EB3D222432C1EC7A82F041E7 /* WebRTC-LICENSE.txt */,
+				A04DC249485D7836C772411C /* Resources */,
+				FC9E967C59A100ECB338A917 /* TaoScreen */,
+				0D773F133929727ADC9A9903 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A04DC249485D7836C772411C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				53CA7A24A877328AB638E714 /* AppIcon.icns */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		B75C4CEC96D0F90B20FEC02B /* Desktop */ = {
+			isa = PBXGroup;
+			children = (
+				14703D864EBCE3658B11CB53 /* DesktopCapture.swift */,
+				7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */,
+				D43AD55962EFC6C425F9B171 /* DesktopClipboard.swift */,
+				99F66111086D1CE95A29008F /* DesktopDirectService.swift */,
+				27E859E282119872F3FF50F1 /* DesktopDirectTLS.swift */,
+				482ED5D2B8970291B7A70C44 /* DesktopDirectTrust.swift */,
+				3B01CA5D2ACCC8EB650477D0 /* DesktopDirectView.swift */,
+				F76C3C11C91DE4F47ACFB5A6 /* DesktopDrop.swift */,
+				04EE4B0B1A5E17CE7FB689BD /* DesktopFileReturnPanel.swift */,
+				6554A8E31C37E544E8532089 /* DesktopFiles.swift */,
+				1C9D38FA76E937BA80A9AD0D /* DesktopInputDiagnostics.swift */,
+				06EC7029CFABDCA483B68321 /* DesktopMacControls.swift */,
+				122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */,
+				A075650BB2BA71103F99F924 /* DesktopNativeDrag.swift */,
+				F853F0B190C04A2243295C8E /* DesktopPermissions.swift */,
+				8FE35AF660F2A56A3A3EF027 /* DesktopPortForwarding.swift */,
+				9B10B1284F4D9496DE58D0B0 /* DesktopPortForwardingModels.swift */,
+				A5D592C736F3C9072D397B8F /* DesktopPortForwardingView.swift */,
+				50B627A2910ECDCC0A022AD0 /* DesktopPortMappingModels.swift */,
+				B073A16E24E13119920800E8 /* DesktopPortService.swift */,
+				EC82CDD925DC235ACBC73529 /* DesktopPortSession.swift */,
+				2F26075BA5A472C53338153E /* DesktopPortUDP.swift */,
+				5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */,
+				D5E9ED68056A6AFE2AA3A7F4 /* DesktopPrivacy.swift */,
+				58A61391F84E58B336A6A1BC /* DesktopPrivacyView.swift */,
+				DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */,
+				1579A243968C5EBA92860A95 /* DesktopRemoteSecurityView.swift */,
+				DC2B7CED1A4BFEC42307491B /* DesktopRTC.swift */,
+				CE5E5524AC6EEED11E1A99B1 /* DesktopSessionState.swift */,
+				CB9CDB31AFC7FA6F17FF484D /* DesktopVideoSettings.swift */,
+				A4EF764EABAF0C23B093E3DF /* DesktopView.swift */,
+			);
+			path = Desktop;
+			sourceTree = "<group>";
+		};
+		E29AD879AD3F772FAA6BD6D4 /* Account */ = {
+			isa = PBXGroup;
+			children = (
+				36D27A711237CFA3EB2B7ACD /* AccountTypes.swift */,
+				B1D9394C1208E3ED1B916708 /* CloudJSON.swift */,
+				CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */,
+				75392AD840636B8B534BB4A2 /* DesktopAPI.swift */,
+				090A013BFD01F9D87F7622F8 /* DesktopOAuthLogin.swift */,
+			);
+			path = Account;
+			sourceTree = "<group>";
+		};
+		FC9E967C59A100ECB338A917 /* TaoScreen */ = {
+			isa = PBXGroup;
+			children = (
+				97FFBD95A4C75052F667FF87 /* TaoScreenApp.swift */,
+				E29AD879AD3F772FAA6BD6D4 /* Account */,
+				B75C4CEC96D0F90B20FEC02B /* Desktop */,
+				2CFE17A8E3F82A039E222F6E /* Files */,
+				12240CAD1D6C85052C990057 /* Support */,
+				17738A8417BF260B6875DBB9 /* Updates */,
+			);
+			name = TaoScreen;
+			path = Sources/TaoScreen;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9A1D264810F276D4AFF54C06 /* TaoScreen */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 34342D04E22C74B0DB863B02 /* Build configuration list for PBXNativeTarget "TaoScreen" */;
+			buildPhases = (
+				9E97F335D1E26BE82A5D4D92 /* Sources */,
+				84B89E0E3722190304F38094 /* Resources */,
+				C4F43B964BE51847021041CE /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TaoScreen;
+			packageProductDependencies = (
+				4536110987BE42E717BE3078 /* WebRTC */,
+				929D26CD8C846E607AB9D427 /* Sparkle */,
+			);
+			productName = TaoScreen;
+			productReference = 83E26820F2703C1AA8DCA661 /* TaoScreen.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8999AB78D95727F43443E1B9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					9A1D264810F276D4AFF54C06 = {
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 9750A0D3FC2A11648D7D63EE /* Build configuration list for PBXProject "TaoScreen" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 58521128D6A2737F954CB915;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				38B2B9C2FC54BD7C0DC95818 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				55267A4875FD849DE80D2165 /* XCRemoteSwiftPackageReference "WebRTC" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0D773F133929727ADC9A9903 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9A1D264810F276D4AFF54C06 /* TaoScreen */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		84B89E0E3722190304F38094 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */,
+				3022B033982F8F4198E626E7 /* WebRTC-LICENSE.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9E97F335D1E26BE82A5D4D92 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4791E6649902B8BEE2093927 /* AccountTypes.swift in Sources */,
+				24A5B0EB1DC28850F0B3ABC2 /* CloudJSON.swift in Sources */,
+				845AC05FEAAA2F2E4368275C /* DesktopAPI.swift in Sources */,
+				9632181D4FD4BF30C7E032C9 /* DesktopAccountState.swift in Sources */,
+				4AEE9475952F5BEC0E085CAB /* DesktopCapture.swift in Sources */,
+				D5572EC9E06D12DEB8E9F509 /* DesktopCenter.swift in Sources */,
+				D30A30D3DA3BA3A9D91E7AD8 /* DesktopClipboard.swift in Sources */,
+				2F3DE0B5049BD3DE7BBCA921 /* DesktopDirectService.swift in Sources */,
+				8B6DD200B865A41430EE09F5 /* DesktopDirectTLS.swift in Sources */,
+				7932645207F454BDEB876E12 /* DesktopDirectTrust.swift in Sources */,
+				A77FADA5F98332C1542D8C68 /* DesktopDirectView.swift in Sources */,
+				4E9DB6DB4B8EC5D1734D21F4 /* DesktopDrop.swift in Sources */,
+				28EDA4C4C4919DE0492569D9 /* DesktopFileHelpers.swift in Sources */,
+				4D6BCB81EA74D5FE8E9E79EC /* DesktopFileReturnPanel.swift in Sources */,
+				A6E2360ED7BF2E074F43D0B9 /* DesktopFiles.swift in Sources */,
+				478E2C92BCF5E8CAEC420460 /* DesktopInputDiagnostics.swift in Sources */,
+				FCDDFDD9B3B114DB2ECA6697 /* DesktopMacControls.swift in Sources */,
+				9F1BCC24B71E751E556D4034 /* DesktopModels.swift in Sources */,
+				5D94A1F8DBBD5FD1DCA49DF0 /* DesktopNativeDrag.swift in Sources */,
+				37FCC726641AD6A7D35D937E /* DesktopOAuthLogin.swift in Sources */,
+				950070CDCE61B5B632504003 /* DesktopPermissions.swift in Sources */,
+				4F0FA4031072DF487677AAC2 /* DesktopPortForwarding.swift in Sources */,
+				8EE74B808289A0DBFD32366A /* DesktopPortForwardingModels.swift in Sources */,
+				3F07357CCAF8748092EA6098 /* DesktopPortForwardingView.swift in Sources */,
+				FF26A82FFAB67F2F5BBCC654 /* DesktopPortMappingModels.swift in Sources */,
+				A22ACF1DFFEA81DCE0A617D6 /* DesktopPortService.swift in Sources */,
+				4D35EF94B8275A8BB3A96BCC /* DesktopPortSession.swift in Sources */,
+				953D70BC1D60C8922ED68A8E /* DesktopPortUDP.swift in Sources */,
+				DD6DD3391E9208D7D9E68D6D /* DesktopPortWindowCloseGuard.swift in Sources */,
+				E68BB1A05BB9205875F83D80 /* DesktopPrivacy.swift in Sources */,
+				FCB7711D53EF5D00436E0916 /* DesktopPrivacyView.swift in Sources */,
+				A016DA788CAB7DFD543BD7B7 /* DesktopRTC.swift in Sources */,
+				EB5C6C3AF1B49B50F1F3343E /* DesktopRemoteSecurity.swift in Sources */,
+				419BC4A4B753694A18199221 /* DesktopRemoteSecurityView.swift in Sources */,
+				8BADE21AC0F2C546EEFF924B /* DesktopRuntime.swift in Sources */,
+				CB90EE7517498340E97E07C0 /* DesktopSessionState.swift in Sources */,
+				EAAD58FFAA0F5C2685E6B878 /* DesktopUpdates.swift in Sources */,
+				8D0C40D107953427EBAD162F /* DesktopVideoSettings.swift in Sources */,
+				BA876965894BE62BBA96402B /* DesktopView.swift in Sources */,
+				4B9559C2D1EB8EABC9FF1B3E /* RemoteAvailability.swift in Sources */,
+				D4B9660B729162F75B3EB2BA /* TaoScreenApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4597A62F19608C80D3F3514F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.taoscreen.development;
+				PRODUCT_NAME = TaoScreen;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TAOSCREEN_OAUTH_CALLBACK_SCHEME = taoscreen;
+			};
+			name = Release;
+		};
+		4FDB1B8044D8C0BED555A6F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		DD5B37EBA942353C80DEA1C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EEA7C26F9871B18BF8C5D329 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.taoscreen.development;
+				PRODUCT_NAME = TaoScreen;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TAOSCREEN_OAUTH_CALLBACK_SCHEME = taoscreen;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		34342D04E22C74B0DB863B02 /* Build configuration list for PBXNativeTarget "TaoScreen" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EEA7C26F9871B18BF8C5D329 /* Debug */,
+				4597A62F19608C80D3F3514F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9750A0D3FC2A11648D7D63EE /* Build configuration list for PBXProject "TaoScreen" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD5B37EBA942353C80DEA1C9 /* Debug */,
+				4FDB1B8044D8C0BED555A6F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		38B2B9C2FC54BD7C0DC95818 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.10.0;
+			};
+		};
+		55267A4875FD849DE80D2165 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = exactVersion;
+				version = 154.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4536110987BE42E717BE3078 /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 55267A4875FD849DE80D2165 /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
+		};
+		929D26CD8C846E607AB9D427 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 38B2B9C2FC54BD7C0DC95818 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 8999AB78D95727F43443E1B9 /* Project object */;
+}

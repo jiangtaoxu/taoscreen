@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaoScreen 管理后台登录</title>
+  <style nonce="{{.Nonce}}">
+    :root {font: 15px -apple-system, BlinkMacSystemFont, sans-serif; color: #182632; background: #f4f6f8}
+    * {box-sizing: border-box}
+    body {margin: 0; padding: 24px; min-height: 100vh; display: grid; place-items: center}
+    main {width: min(100%, 400px); padding: 28px; background: white; border: 1px solid #dce3e8; border-radius: 12px}
+    h1 {font-size: 23px; margin: 0 0 22px}
+    form {display: grid; gap: 14px}
+    label {display: grid; gap: 6px}
+    input, button {width: 100%; padding: 10px; font: inherit; border: 1px solid #cbd4db; border-radius: 8px}
+    button {background: #1d6578; color: white; cursor: pointer}
+    [role=alert] {color: #ae2732}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>TaoScreen 管理后台</h1>
+    {{if .Message}}<p role="alert">{{.Message}}</p>{{end}}
+    <form action="/admin/login" method="post">
+      <label>管理员邮箱<input name="email" type="email" autocomplete="username" maxlength="254" required autofocus></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+      <label>动态码或恢复码<input name="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" maxlength="26" required></label>
+      <button type="submit">登录</button>
+    </form>
+  </main>
+</body>
+</html>

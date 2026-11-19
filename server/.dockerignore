@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+tests
+docs
+deploy
+scripts
+bin
+
+.credentials/
