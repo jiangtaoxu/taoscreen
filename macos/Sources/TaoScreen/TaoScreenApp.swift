@@ -165,9 +165,21 @@ private struct DesktopRootView: View {
 private struct DesktopMenu: View {
     @ObservedObject private var center = DesktopCenter.shared
     @ObservedObject private var direct = DesktopDirectService.shared.center
+    @ObservedObject private var directService = DesktopDirectService.shared
+    @ObservedObject private var permissions = DesktopPermissions.shared
     @Environment(\.openWindow) private var openWindow
+    private var needsHostPermissionAttention: Bool {
+        (center.enabled || directService.unattendedEnabled || directService.unattendedPasswordSettings.enabled || directService.receiving)
+            && permissions.snapshot.hasAnyMissing
+    }
     var body: some View {
         Text(center.status)
+        if needsHostPermissionAttention {
+            Button("⚠️ 缺少被控权限（点击打开主窗口授权）") {
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
         Button("端口映射…") { center.portService.activateMappingWindow(); openWindow(id: "ports"); NSApp.activate(ignoringOtherApps: true) }
         Button("显示主窗口") { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
         if center.isHost { Button("停止共享", role: .destructive) { center.disconnect() } }

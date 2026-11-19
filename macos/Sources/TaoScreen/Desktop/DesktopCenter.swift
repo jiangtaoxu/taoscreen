@@ -5,7 +5,7 @@ import WebRTC
 /// 独立于文件互传的桌面在线服务。默认逐次确认，可在本机为当前账号开启无人值守。
 @MainActor
 final class DesktopCenter: ObservableObject, Identifiable {
-    static let shared = DesktopCenter()
+    static let shared = DesktopCenter(permissions: .shared)
     let isDirect: Bool
     weak var alternateHost: DesktopCenter?
     let id = UUID()
@@ -658,10 +658,23 @@ final class DesktopCenter: ObservableObject, Identifiable {
 
     private func acceptTrustedDirect(_ request: DesktopInvitation) async {
         guard let connection = directConnection, connection.id == request.id else { return }
-        guard let grant = connection.authorizedGrant?(),
-              checkPermissions(control: grant.control, prompt: false) else {
+        guard let grant = connection.authorizedGrant?() else {
             send(.init(type: "reject", id: request.id, to: request.peer.id,
-                       payload: .init(message: "无人值守授权或 macOS 屏幕录制、辅助功能权限不可用，请在被控 Mac 检查。")))
+                       payload: .init(message: "无人值守授权已失效，请在被控 Mac 检查。")))
+            finishDirectConnection()
+            return
+        }
+        guard checkPermissions(control: grant.control, prompt: false) else {
+            permissions.remind(requester: request.peer.name, control: grant.control)
+            NSApp?.requestUserAttention(.informationalRequest)
+            let missing = permissions.snapshot.missing(control: grant.control)
+            let base = permissions.snapshot.rejectionMessage(control: grant.control)
+                ?? "无人值守授权或 macOS 屏幕录制、辅助功能权限不可用，请在被控 Mac 检查。"
+            let reason = missing.contains(.screenRecording)
+                ? "\(base)（请确认系统设置中的屏幕录制权限已勾选并重启 TaoScreen）"
+                : base
+            send(.init(type: "reject", id: request.id, to: request.peer.id,
+                       payload: .init(message: reason)))
             finishDirectConnection()
             return
         }

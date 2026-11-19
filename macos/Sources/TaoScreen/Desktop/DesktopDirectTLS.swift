@@ -39,10 +39,11 @@ struct DesktopDirectCode {
     private func proofInput(_ id: UUID) -> Data { Data("taoscreen-direct-v1:\(id.uuidString)".utf8) }
 }
 
-/// 每次开启接收时生成仅驻留内存的证书。控制端通过连接码固定这张证书。
+/// 每次开启接收时生成仅驻留内存的证书。控制端通过连接码或通道绑定 PAKE 验证这张证书。
 struct DesktopDirectIdentity {
     let identity: sec_identity_t
     let code: DesktopDirectCode
+    let certificateFingerprint: Data
 
     init(deviceKey: P256.Signing.PrivateKey? = nil) throws {
         let attributes = [kSecAttrKeyType: kSecAttrKeyTypeECSECPrimeRandom, kSecAttrKeySizeInBits: 256] as CFDictionary
@@ -85,7 +86,9 @@ struct DesktopDirectIdentity {
             throw Self.failure
         }
         self.identity = identity
-        code = DesktopDirectCode(fingerprint: Data(SHA256.hash(data: bytes)))
+        let fingerprint = Data(SHA256.hash(data: bytes))
+        self.certificateFingerprint = fingerprint
+        code = DesktopDirectCode(fingerprint: fingerprint)
     }
 
     private static var failure: CloudError { CloudError("无法创建本次直连的加密身份，请重试。") }
@@ -107,6 +110,23 @@ struct DesktopDirectIdentity {
             guard let key = publicKey(of: certificate) else { return false }
             return permits(key)
         })
+    }
+
+    /// 供通道绑定 PAKE 使用：TLS 层接受对端叶子证书，身份真伪由后续 PAKE 绑定该证书 SHA-256 指纹验证。
+    static func unpinnedParameters() -> NWParameters {
+        parameters(identity: nil, requiresClientIdentity: false, verified: { _ in true })
+    }
+
+    static func peerCertificateFingerprint(_ connection: NWConnection) -> Data? {
+        guard let tls = connection.metadata(definition: NWProtocolTLS.definition) as? NWProtocolTLS.Metadata else { return nil }
+        var fingerprint: Data?
+        sec_protocol_metadata_access_peer_certificate_chain(tls.securityProtocolMetadata) { certificate in
+            if fingerprint == nil {
+                let ref = sec_certificate_copy_ref(certificate).takeRetainedValue()
+                fingerprint = Data(SHA256.hash(data: SecCertificateCopyData(ref) as Data))
+            }
+        }
+        return fingerprint
     }
 
     static func peerPublicKey(_ connection: NWConnection) -> Data? {

@@ -23,7 +23,7 @@ struct DesktopView: View {
         VStack(alignment: .leading, spacing: 20) {
             header
             settingsShortcuts
-            DesktopPermissionReminder(center: center, showPermissions: showPermissions)
+            DesktopProactivePermissionBanner(permissions: center.permissions, showPermissions: showPermissions)
             DesktopMessage(center: center)
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
@@ -93,12 +93,17 @@ struct DesktopView: View {
     }
 
     private var settingsShortcuts: some View {
-        HStack(spacing: 0) {
-            DesktopSettingsShortcut(title: "访问权限", subtitle: permissionSummary, symbol: "lock.shield") {
+        let missingPermissions = !center.permissions.snapshot.missing(control: true).isEmpty
+        let unattendedMissing = center.unattended.enabled && !center.permissions.snapshot.missing(control: center.unattended.control).isEmpty
+        return HStack(spacing: 0) {
+            DesktopSettingsShortcut(title: "访问权限", subtitle: permissionSummary,
+                                    symbol: missingPermissions ? "exclamationmark.shield" : "lock.shield",
+                                    warning: missingPermissions) {
                 settingsSheet = .permissions
             }
             Divider().frame(height: 28)
-            DesktopSettingsShortcut(title: "无人值守", subtitle: unattendedSummary, symbol: "checkmark.shield") {
+            DesktopSettingsShortcut(title: "无人值守", subtitle: unattendedSummary,
+                                    symbol: "checkmark.shield", warning: unattendedMissing) {
                 settingsSheet = .unattended
             }.disabled(!center.canConfigureUnattended)
             Divider().frame(height: 28)
@@ -123,14 +128,15 @@ struct DesktopSettingsShortcut: View {
     let title: String
     let subtitle: String
     let symbol: String
+    var warning = false
     let action: () -> Void
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(.secondary).frame(width: 24)
+                Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(warning ? .orange : .secondary).frame(width: 24)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title).font(.callout.weight(.medium)).foregroundStyle(.primary)
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(subtitle).font(.caption).foregroundStyle(warning ? .orange : .secondary).lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
@@ -186,26 +192,6 @@ private struct DesktopAvailableCard: View {
             Button("连接", action: connect).buttonStyle(.borderedProminent).disabled(!canConnect)
         }.controlSize(.small).padding(16)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-private struct DesktopPermissionReminder: View {
-    @ObservedObject var center: DesktopCenter
-    @Binding var showPermissions: Bool
-    var body: some View {
-        let permissions = center.permissions
-        let control = permissions.requester != nil ? permissions.requestedControl : center.unattended.control
-        let missing = permissions.snapshot.missing(control: control)
-        if center.enabled && (permissions.requester != nil || center.unattended.enabled && !missing.isEmpty) {
-            HStack(alignment: .top) {
-                Image(systemName: missing.isEmpty ? "checkmark.circle" : "exclamationmark.triangle")
-                Text(missing.isEmpty ? "所需权限已生效，请让\(permissions.requester ?? "对方")重新发起连接。" : "\(permissions.requester.map { "\($0) 请求连接此电脑。" } ?? "")请在此电脑授权：\(missing.map(\.title).joined(separator: "、"))。")
-                    .font(.callout)
-                Spacer()
-                Button("检查权限…") { showPermissions = true }
-            }.padding(12).foregroundStyle(missing.isEmpty ? .green : .orange)
-                .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8))
-        }
     }
 }
 
@@ -1149,11 +1135,21 @@ private struct DesktopConsentView: View {
     }
 
     var body: some View {
-        ScrollView { VStack(alignment: .leading, spacing: 18) {
+        let missing = center.permissions.snapshot.missing(control: control)
+        return ScrollView { VStack(alignment: .leading, spacing: 18) {
             Label("远程桌面请求", systemImage: "display.2").font(.title2.bold())
             Text("\(center.invitation?.peer.name ?? "远程设备") 希望查看这台电脑。共享期间，对方可看到所选屏幕中的全部内容。")
+            if !missing.isEmpty {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("还需授予「\(missing.map(\.title).joined(separator: "」、「"))」才能接受本次共享。")
+                        .font(.callout).fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+            }
             if center.isDirect {
-                Text("这台设备使用了本次直连的连接码。请确认设备是你刚刚发给连接码的对象。")
+                Text("这台设备使用了本次直连的连接密码或连接码。请确认设备是你刚刚发送的对象。")
                     .font(.caption).foregroundStyle(.secondary)
             }
             DesktopShareDisplayPicker(center: center, selection: $display)
@@ -1175,12 +1171,16 @@ private struct DesktopConsentView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             HStack {
+                if !missing.isEmpty {
+                    Text("缺少\(missing.map { $0 == .screenRecording ? "录屏" : "辅助功能" }.joined(separator: "、"))权限")
+                        .font(.caption).foregroundStyle(.orange)
+                }
                 Spacer()
                 Button("拒绝", role: .cancel) { center.reject(); dismiss() }
                 Button("接受并共享") {
                     Task { await center.accept(display: display, control: control, audio: sound, rememberDirectDevice: rememberDirectDevice) }
                 }.buttonStyle(.borderedProminent)
-                    .disabled(center.invitation == nil || !center.permissions.snapshot.missing(control: control).isEmpty)
+                    .disabled(center.invitation == nil || !missing.isEmpty)
             }
         }.padding(24) }.frame(width: 560, height: 660)
         .onAppear { center.permissions.requireControl(control) }

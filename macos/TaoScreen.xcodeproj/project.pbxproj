@@ -10,6 +10,7 @@
 		24A5B0EB1DC28850F0B3ABC2 /* CloudJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D9394C1208E3ED1B916708 /* CloudJSON.swift */; };
 		276B763F5A50F90140AA923B /* DesktopShareDisplayPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = F562BDF572D1A6FCEDFA83EC /* DesktopShareDisplayPicker.swift */; };
 		28EDA4C4C4919DE0492569D9 /* DesktopFileHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6468C6ADF9F7C425873B137 /* DesktopFileHelpers.swift */; };
+		2EEFD8DEDF1218F0741D3C92 /* DesktopDirectPAKE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9194F27B5E7B5B65822C1FCB /* DesktopDirectPAKE.swift */; };
 		2F3DE0B5049BD3DE7BBCA921 /* DesktopDirectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F66111086D1CE95A29008F /* DesktopDirectService.swift */; };
 		3022B033982F8F4198E626E7 /* WebRTC-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = EB3D222432C1EC7A82F041E7 /* WebRTC-LICENSE.txt */; };
 		328CCB9FEAFAF3427E4141E4 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 4536110987BE42E717BE3078 /* WebRTC */; };
@@ -82,6 +83,7 @@
 		82B974EA0939275138D0E239 /* DesktopRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRuntime.swift; sourceTree = "<group>"; };
 		83E26820F2703C1AA8DCA661 /* TaoScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaoScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FE35AF660F2A56A3A3EF027 /* DesktopPortForwarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwarding.swift; sourceTree = "<group>"; };
+		9194F27B5E7B5B65822C1FCB /* DesktopDirectPAKE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectPAKE.swift; sourceTree = "<group>"; };
 		954BB36D15470E9B8860BF29 /* DesktopVirtualDisplayBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DesktopVirtualDisplayBridge.m; sourceTree = "<group>"; };
 		97FFBD95A4C75052F667FF87 /* TaoScreenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaoScreenApp.swift; sourceTree = "<group>"; };
 		99F66111086D1CE95A29008F /* DesktopDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectService.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				14703D864EBCE3658B11CB53 /* DesktopCapture.swift */,
 				7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */,
 				D43AD55962EFC6C425F9B171 /* DesktopClipboard.swift */,
+				9194F27B5E7B5B65822C1FCB /* DesktopDirectPAKE.swift */,
 				99F66111086D1CE95A29008F /* DesktopDirectService.swift */,
 				27E859E282119872F3FF50F1 /* DesktopDirectTLS.swift */,
 				482ED5D2B8970291B7A70C44 /* DesktopDirectTrust.swift */,
@@ -342,6 +345,7 @@
 				4AEE9475952F5BEC0E085CAB /* DesktopCapture.swift in Sources */,
 				D5572EC9E06D12DEB8E9F509 /* DesktopCenter.swift in Sources */,
 				D30A30D3DA3BA3A9D91E7AD8 /* DesktopClipboard.swift in Sources */,
+				2EEFD8DEDF1218F0741D3C92 /* DesktopDirectPAKE.swift in Sources */,
 				2F3DE0B5049BD3DE7BBCA921 /* DesktopDirectService.swift in Sources */,
 				8B6DD200B865A41430EE09F5 /* DesktopDirectTLS.swift in Sources */,
 				7932645207F454BDEB876E12 /* DesktopDirectTrust.swift in Sources */,

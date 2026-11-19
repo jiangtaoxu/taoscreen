@@ -125,4 +125,27 @@ struct DesktopPermissionTests {
         view.cacheDisplay(in: view.bounds, to: bitmap)
         try #require(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: output))
     }
+
+    @Test @MainActor func detailReasonAndRequestGuidanceClarifyMissingPermissions() {
+        let none = DesktopPermissionSnapshot(screenRecording: false, accessibility: false, postEvents: false)
+        #expect(none.hasAnyMissing)
+        #expect(none.missingAll == [.screenRecording, .accessibility])
+        #expect(none.detailReason(for: .screenRecording).contains("无法查看"))
+        #expect(none.detailReason(for: .accessibility).contains("无法操作"))
+
+        let partialInput = DesktopPermissionSnapshot(screenRecording: true, accessibility: true, postEvents: false)
+        #expect(partialInput.hasAnyMissing)
+        #expect(partialInput.detailReason(for: .accessibility).contains("投递输入事件"))
+
+        let ready = DesktopPermissionSnapshot(screenRecording: true, accessibility: true, postEvents: true)
+        #expect(!ready.hasAnyMissing)
+        #expect(ready.detailReason(for: .screenRecording).contains("已授权"))
+        #expect(ready.detailReason(for: .accessibility).contains("已授权"))
+
+        let permissions = DesktopPermissions(read: { none }, request: { _ in })
+        permissions.request(.screenRecording)
+        #expect(permissions.message?.contains("打开录屏设置") == true)
+        permissions.request(.accessibility)
+        #expect(permissions.message?.contains("打开辅助功能设置") == true)
+    }
 }

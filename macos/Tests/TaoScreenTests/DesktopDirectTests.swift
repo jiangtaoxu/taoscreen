@@ -225,6 +225,183 @@ struct DesktopDirectTests {
         #expect(host.trustedDevices.first?.grant == nil)
     }
 
+    @Test func elligator2MapsToCurve25519MainGroupAndSupportsCommutativePAKE() throws {
+        let aMont = Field25519(u64: 486_662)
+        for _ in 0..<100 {
+            let uniform = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
+            let uBytes = Field25519.mapToCurve25519(uniform)
+            #expect(uBytes.count == 32)
+            #expect(uBytes != Data(repeating: 0, count: 32))
+            let u = Field25519(littleEndianBytes: uBytes)
+            let rhs = u.squared() * u + aMont * u.squared() + u
+            #expect(rhs.isSquareOrZero())
+        }
+
+        let sessionID = UUID()
+        let fingerprint = Data(repeating: 0x2A, count: 32)
+        let nonce = Data(repeating: 0x7B, count: 16)
+        let prs = Data("test-shared-secret".utf8)
+        let hostPAKE = try DesktopDirectPAKE(prs: prs, mode: .temporary, sessionID: sessionID,
+                                             certFingerprint: fingerprint, nonce: nonce)
+        let clientPAKE = try DesktopDirectPAKE(prs: prs, mode: .temporary, sessionID: sessionID,
+                                               certFingerprint: fingerprint, nonce: nonce)
+        let (clientConfirm, expectedHostConfirm) = try clientPAKE.clientConfirm(hostShare: hostPAKE.localShare)
+        let actualHostConfirm = try #require(hostPAKE.hostConfirm(clientShare: clientPAKE.localShare, clientConfirm: clientConfirm))
+        #expect(DesktopDirectPAKE.constantTimeEqual(actualHostConfirm, expectedHostConfirm))
+
+        let wrongPasswordPAKE = try DesktopDirectPAKE(prs: Data("wrong-secret".utf8), mode: .temporary,
+                                                      sessionID: sessionID, certFingerprint: fingerprint, nonce: nonce)
+        let (badConfirm, _) = try wrongPasswordPAKE.clientConfirm(hostShare: hostPAKE.localShare)
+        #expect(hostPAKE.hostConfirm(clientShare: wrongPasswordPAKE.localShare, clientConfirm: badConfirm) == nil)
+
+        let mitmPAKE = try DesktopDirectPAKE(prs: prs, mode: .temporary, sessionID: sessionID,
+                                             certFingerprint: Data(repeating: 0x3C, count: 32), nonce: nonce)
+        let (mitmConfirm, _) = try mitmPAKE.clientConfirm(hostShare: hostPAKE.localShare)
+        #expect(hostPAKE.hostConfirm(clientShare: mitmPAKE.localShare, clientConfirm: mitmConfirm) == nil)
+
+        let wrongModePAKE = try DesktopDirectPAKE(prs: prs, mode: .unattendedPassword, sessionID: sessionID,
+                                                  certFingerprint: fingerprint, nonce: nonce)
+        let (modeConfirm, _) = try wrongModePAKE.clientConfirm(hostShare: hostPAKE.localShare)
+        #expect(hostPAKE.hostConfirm(clientShare: wrongModePAKE.localShare, clientConfirm: modeConfirm) == nil)
+    }
+
+    @Test func credentialsPBKDF2AndRateLimiterBehaveAsExpected() throws {
+        let code = DesktopDirectCode(fingerprint: Data(repeating: 9, count: 32)).text
+        if case .directURI(let ep, let parsed) = DesktopDirectCredential.parse("taoscreen-direct://100.64.0.10:45871#\(code)") {
+            #expect(ep == .hostPort(host: "100.64.0.10", port: 45871))
+            #expect(parsed.text == code)
+        } else {
+            Issue.record("未能解析 taoscreen-direct URI")
+        }
+        if case .legacyCode(let parsed) = DesktopDirectCredential.parse(code) {
+            #expect(parsed.text == code)
+        } else {
+            Issue.record("未能解析完整连接码")
+        }
+        if case .temporaryPassword(let norm) = DesktopDirectCredential.parse("k7m 9p4") {
+            #expect(norm == "K7M9P4")
+            #expect(DesktopTemporaryPassword.format(norm) == "K7M 9P4")
+        } else {
+            Issue.record("未能解析 6 位临时密码")
+        }
+        if case .fixedPassword(let fixed) = DesktopDirectCredential.parse("MyServerPass#2026") {
+            #expect(fixed == "MyServerPass#2026")
+        } else {
+            Issue.record("未能解析固定访问密码")
+        }
+        for invalid in ["", "12345", "01OIAB", "short"] {
+            if case .invalid = DesktopDirectCredential.parse(invalid) {} else {
+                Issue.record("不应接受无效凭据：\(invalid)")
+            }
+        }
+
+        let verifier = try DesktopFixedPasswordVerifier.create(password: "MyServerPass#2026", rounds: 10_000)
+        #expect(try DesktopFixedPasswordVerifier.deriveKey(password: "MyServerPass#2026", salt: verifier.salt, rounds: verifier.rounds) == verifier.derivedKey)
+        #expect(try DesktopFixedPasswordVerifier.deriveKey(password: "WrongPass#2026", salt: verifier.salt, rounds: verifier.rounds) != verifier.derivedKey)
+
+        var limiter = DesktopDirectRateLimiter(maxAttempts: 5, lockoutSeconds: 60)
+        let now = Date()
+        for attempt in 1...4 {
+            let result = limiter.recordFailure(now: now)
+            #expect(!result.lockedOut && result.remainingAttempts == 5 - attempt)
+            #expect(limiter.remainingLockout(now: now) == nil)
+        }
+        let locked = limiter.recordFailure(now: now)
+        #expect(locked.lockedOut && locked.remainingAttempts == 0)
+        #expect(limiter.remainingLockout(now: now) == 60)
+        limiter.recordSuccess()
+        #expect(limiter.remainingLockout(now: now) == nil)
+    }
+
+    @Test(.enabled(if: DesktopLocalSession.current.canStart(unattended: false)))
+    @MainActor func temporaryShortPasswordAuthenticatesAndRateLimits() async throws {
+        _ = NSApplication.shared
+        let host = DesktopDirectService(center: DesktopCenter(isDirect: true), port: .any,
+                                        showWindow: false, loopbackOnly: true)
+        let viewer = DesktopDirectService(center: DesktopCenter(isDirect: true), showWindow: false)
+        defer { viewer.shutdown(); host.shutdown() }
+
+        host.startReceiving()
+        try await wait("主机临时密码就绪") { host.temporaryPassword != nil && host.listeningPort != nil }
+        let initialPassword = try #require(host.temporaryPassword)
+        let endpoint = try NWEndpoint.hostPort(host: "127.0.0.1", port: #require(host.listeningPort.flatMap(NWEndpoint.Port.init(rawValue:))))
+
+        let wrongPassword = initialPassword == "222222" ? "333333" : "222222"
+        for attempt in 1...5 {
+            viewer.connectWithPassword(endpoint: endpoint, password: wrongPassword, unattended: false)
+            try await wait("第 \(attempt) 次错误密码响应") { !viewer.busy }
+            #expect(viewer.message != nil)
+            #expect(host.center.invitation == nil)
+        }
+        try await wait("触发限流后自动更换临时密码") { host.temporaryPassword != initialPassword }
+        #expect(viewer.message?.contains("60 秒") == true)
+
+        // 新主机实例验证正确 6 位临时密码能正常建立连接确认。
+        let host2 = DesktopDirectService(center: DesktopCenter(isDirect: true), port: .any,
+                                         showWindow: false, loopbackOnly: true)
+        defer { host2.shutdown() }
+        host2.startReceiving()
+        try await wait("新主机临时密码就绪") { host2.temporaryPassword != nil && host2.listeningPort != nil }
+        let endpoint2 = try NWEndpoint.hostPort(host: "127.0.0.1", port: #require(host2.listeningPort.flatMap(NWEndpoint.Port.init(rawValue:))))
+        let password2 = try #require(host2.temporaryPassword)
+
+        viewer.connectWithPassword(endpoint: endpoint2, password: DesktopTemporaryPassword.format(password2).lowercased(), unattended: false)
+        try await wait("临时密码校验成功弹出确认") { host2.center.invitation != nil && !viewer.center.viewerSessions.isEmpty }
+        #expect(!host2.receiving && host2.temporaryPassword == nil)
+
+        host2.center.reject(reason: "测试拒绝临时密码连接")
+        try await wait("拒绝后双方清理完成") { !viewer.busy && !host2.busy }
+        #expect(viewer.center.message?.contains("测试拒绝临时密码连接") == true)
+    }
+
+    @Test(.enabled(if: DesktopLocalSession.current.canHost))
+    @MainActor func tailscaleFixedPasswordUnattendedFlowAndPermissionReminder() async throws {
+        _ = NSApplication.shared
+        var storage: [String: Data] = [:]
+        let realStore = DesktopTrustedStore(read: { storage[$0] }, write: { key, val in
+            if val.isEmpty { storage.removeValue(forKey: key) } else { storage[key] = val }
+        })
+        var permissionChecks = 0
+        let permissions = DesktopPermissions(read: {
+            permissionChecks += 1
+            return .init(screenRecording: false, accessibility: false, postEvents: false)
+        }, request: { _ in Issue.record("固定密码无人值守不得弹出系统权限申请") })
+
+        let suite = "taoscreen.direct.fixedpass.tests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let host = DesktopDirectService(center: DesktopCenter(permissions: permissions, isDirect: true),
+                                        showWindow: false, loopbackOnly: true, store: realStore, defaults: defaults,
+                                        passwordPort: .any, findTailscaleAddress: { "127.0.0.1" })
+        let viewer = DesktopDirectService(center: DesktopCenter(isDirect: true), showWindow: false,
+                                          loopbackOnly: true, passwordPort: .any, findTailscaleAddress: { "127.0.0.1" })
+        defer { viewer.shutdown(); host.shutdown() }
+
+        let saved = await host.saveUnattendedPassword("ServerPass#2026")
+        #expect(saved && host.hasUnattendedPassword && host.unattendedPasswordSettings.enabled)
+        try await wait("固定密码无人值守监听就绪") { host.unattendedPasswordListeningPort != nil }
+        let port = try #require(host.unattendedPasswordListeningPort)
+        let address = "127.0.0.1:\(port)"
+        let before = permissionChecks
+
+        viewer.connect(address: address, credential: "WrongServerPass#99")
+        try await wait("错误固定密码被拒") { !viewer.busy }
+        #expect(viewer.message?.contains("错误") == true && permissionChecks == before)
+        #expect(!host.center.isHost && host.center.invitation == nil)
+
+        viewer.connect(address: address, credential: "ServerPass#2026")
+        try await wait("正确固定密码通过认证并进入权限检查") { !viewer.busy }
+        #expect(permissionChecks > before)
+        #expect(host.center.permissions.requester != nil)
+        #expect(viewer.center.message?.contains("屏幕录制") == true)
+        #expect(viewer.center.viewerSessions.isEmpty && !host.center.isHost)
+
+        host.clearUnattendedPassword()
+        #expect(!host.hasUnattendedPassword && !host.unattendedPasswordSettings.enabled)
+        #expect(host.unattendedPasswordListeningPort == nil)
+    }
+
     @MainActor private func wait(_ description: String = "直连测试状态", _ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + .seconds(5)
         while !condition() {
