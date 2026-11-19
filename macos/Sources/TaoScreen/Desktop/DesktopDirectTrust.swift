@@ -30,6 +30,11 @@ struct DesktopDirectDeviceProof: Codable {
 struct DesktopTrustedGrant: Codable, Equatable {
     var control = false
     var audio = false
+    var virtualDisplayPreset: DesktopVirtualDisplayPreset? = nil
+
+    var shareDisplay: DesktopShareDisplay {
+        virtualDisplayPreset.map(DesktopShareDisplay.virtual) ?? .main
+    }
 }
 
 struct DesktopTrustedDevice: Identifiable, Codable, Equatable {

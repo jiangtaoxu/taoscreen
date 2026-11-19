@@ -91,6 +91,19 @@ struct DesktopUnattendedSettings: Codable, Equatable {
     var audio = false
     // 旧版配置未包含网络访问授权，升级后保持未授权。
     var portForwarding: Bool? = nil
+    var virtualDisplayPreset: DesktopVirtualDisplayPreset? = nil
+
+    var shareDisplay: DesktopShareDisplay {
+        get {
+            if let virtualDisplayPreset { return .virtual(virtualDisplayPreset) }
+            if let displayID { return .fixed(displayID) }
+            return .main
+        }
+        set {
+            if case let .fixed(id) = newValue { displayID = id } else { displayID = nil }
+            virtualDisplayPreset = newValue.virtualPreset
+        }
+    }
 
     static func load(accountID: String?, defaults: UserDefaults) -> Self {
         guard let accountID, let data = defaults.data(forKey: key(accountID)),

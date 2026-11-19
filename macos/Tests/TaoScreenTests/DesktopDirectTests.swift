@@ -43,6 +43,15 @@ struct DesktopDirectTests {
         }
     }
 
+    @Test func trustedGrantPreservesItsDisplayChoiceAndReadsLegacyGrants() throws {
+        let legacy = try JSONDecoder().decode(DesktopTrustedGrant.self, from: Data(#"{"control":true,"audio":false}"#.utf8))
+        #expect(legacy.shareDisplay == .main && legacy.control && !legacy.audio)
+        var virtual = legacy
+        virtual.virtualDisplayPreset = .ultraHD
+        let restored = try JSONDecoder().decode(DesktopTrustedGrant.self, from: JSONEncoder().encode(virtual))
+        #expect(restored == virtual && restored.shareDisplay == .virtual(.ultraHD))
+    }
+
     @Test(.enabled(if: DesktopLocalSession.current.canStart(unattended: false)))
     @MainActor func authenticatedDirectInvitationRequiresHostConsent() async throws {
         _ = NSApplication.shared

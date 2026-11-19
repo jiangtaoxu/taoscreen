@@ -9,8 +9,10 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0")
     ],
     targets: [
+        .target(name: "DesktopVirtualDisplayBridge", cSettings: [.unsafeFlags(["-fobjc-arc"])]),
         .executableTarget(name: "TaoScreen", dependencies: [.product(name: "WebRTC", package: "WebRTC"),
-                                                      .product(name: "Sparkle", package: "Sparkle")],
+                                                      .product(name: "Sparkle", package: "Sparkle"),
+                                                      "DesktopVirtualDisplayBridge"],
                           swiftSettings: [.swiftLanguageMode(.v5)],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .testTarget(name: "TaoScreenTests", dependencies: ["TaoScreen"])

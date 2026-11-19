@@ -998,6 +998,14 @@ struct DesktopTests {
         let settings = DesktopUnattendedSettings(enabled: true, displayID: 42, control: false, audio: true)
         settings.save(accountID: account.id, defaults: defaults)
         #expect(DesktopUnattendedSettings.load(accountID: account.id, defaults: defaults) == settings)
+        #expect(DesktopUnattendedSettings.load(accountID: account.id, defaults: defaults).shareDisplay == .fixed(42))
+        var virtual = settings
+        virtual.shareDisplay = .virtual(.quadHD)
+        virtual.save(accountID: account.id, defaults: defaults)
+        let restored = DesktopUnattendedSettings.load(accountID: account.id, defaults: defaults)
+        #expect(restored.shareDisplay == .virtual(.quadHD) && restored.displayID == nil)
+        virtual.shareDisplay = .main
+        #expect(virtual.shareDisplay == .main && virtual.virtualDisplayPreset == nil)
         #expect(!DesktopUnattendedSettings.load(accountID: otherUser.id, defaults: defaults).enabled)
         #expect(!DesktopUnattendedSettings.load(accountID: otherServer.id, defaults: defaults).enabled)
         #expect(!DesktopUnattendedSettings.load(accountID: nil, defaults: defaults).enabled)

@@ -193,6 +193,10 @@ private struct DesktopTrustedDeviceRow: View {
                         service.updateGrant(enabled ? DesktopTrustedGrant() : nil, for: device.publicKey)
                     }))
                     if let grant = device.grant {
+                        DesktopShareDisplayPicker(center: service.center, selection: Binding(get: { grant.shareDisplay }, set: { value in
+                            var grant = grant; grant.virtualDisplayPreset = value.virtualPreset
+                            service.updateGrant(grant, for: device.publicKey)
+                        }), allowsFixedDisplay: false)
                         Toggle("允许控制鼠标和键盘", isOn: Binding(get: { grant.control }, set: { value in
                             var grant = grant; grant.control = value
                             service.updateGrant(grant, for: device.publicKey)

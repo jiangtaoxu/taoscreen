@@ -44,6 +44,9 @@ final class DesktopCenter: ObservableObject, Identifiable {
     @Published private(set) var invitation: DesktopInvitation?
     @Published private(set) var peer: DesktopPeer?
     @Published private(set) var isHost = false
+    @Published private var virtualDisplay: DesktopVirtualDisplay?
+    var sharedScreenName: String { virtualDisplay?.preset.title ?? "屏幕" }
+    var managedVirtualDisplayID: CGDirectDisplayID? { virtualDisplay?.id ?? alternateHost?.virtualDisplay?.id }
     @Published private(set) var controlAllowed = false
     @Published private(set) var audioAllowed = false
     @Published private(set) var filesAllowed = false
@@ -305,8 +308,12 @@ final class DesktopCenter: ObservableObject, Identifiable {
             .sink { [weak self] _ in Task { @MainActor in self?.localSessionChanged() } }.store(in: &observations)
         NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)
             .sink { [weak self] _ in
-                guard let self, self.isHost, self.privacyRequested else { return }
-                self.refreshPrivacy()
+                guard let self, self.isHost else { return }
+                if self.capture != nil, self.virtualDisplay?.isExtended == false {
+                    self.endVirtualDisplaySharing("虚拟屏已断开或进入镜像模式，共享已停止。")
+                } else if self.privacyRequested {
+                    self.refreshPrivacy()
+                }
             }.store(in: &observations)
         NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)
             .sink { [weak self] _ in self?.privacyCurtain.stop() }.store(in: &observations)
@@ -366,7 +373,9 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 if self.connected, self.localSessionAvailable, self.captureRecovery.consume(error) {
                     self.restartCapture(reason: "system-stopped-stream")
                 } else {
-                    self.disconnect("屏幕采集已停止：\(error.localizedDescription)")
+                    let reason = "屏幕采集已停止：\(error.localizedDescription)"
+                    if self.virtualDisplay != nil { self.endVirtualDisplaySharing(reason) }
+                    else { self.disconnect(reason) }
                 }
             }
         }
@@ -388,6 +397,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             await old?.stop()
             guard !Task.isCancelled, self.sessionID == id, self.captureGeneration == token else { return }
             do {
+                try self.checkVirtualDisplay()
                 try self.displayActivity.start()
                 try self.preparePrivacyCurtain()
                 let capture = self.makeCapture(id: id, rtc: rtc)
@@ -398,6 +408,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 guard !Task.isCancelled, self.sessionID == id, self.captureGeneration == token else {
                     await capture.stop(); return
                 }
+                try self.checkVirtualDisplay()
                 DesktopSessionLog.record("capture-restarted reason=\(reason)")
                 self.privacyActive = self.privacyRequested && !self.localSession.locked
                 self.privacyChanging = false; self.sendPrivacyStatus()
@@ -405,7 +416,9 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 self.sendVideoStatus()
             } catch {
                 guard !Task.isCancelled, self.sessionID == id, self.captureGeneration == token else { return }
-                self.disconnect("无法恢复屏幕采集：\(error.localizedDescription)")
+                let reason = "无法恢复屏幕采集：\(error.localizedDescription)"
+                if self.virtualDisplay != nil { self.endVirtualDisplaySharing(reason) }
+                else { self.disconnect(reason) }
             }
         }
     }
@@ -652,7 +665,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             finishDirectConnection()
             return
         }
-        await startSharing(request, display: CGMainDisplayID(), control: grant.control, audio: grant.audio, unattended: true)
+        await startSharing(request, display: grant.shareDisplay, control: grant.control, audio: grant.audio, unattended: true)
     }
 
     func directConnectionClosed(id: UUID, reason: String?) {
@@ -706,7 +719,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if isDirect { finishDirectConnection() }
     }
 
-    func accept(display: CGDirectDisplayID, control: Bool, audio: Bool, rememberDirectDevice: Bool = false) async {
+    func accept(display: DesktopShareDisplay, control: Bool, audio: Bool, rememberDirectDevice: Bool = false) async {
         guard let invitation, sessionID == nil, online else { return }
         guard checkPermissions(control: control, prompt: true) else {
             permissions.remind(requester: invitation.peer.name, control: control)
@@ -717,10 +730,11 @@ final class DesktopCenter: ObservableObject, Identifiable {
                            rememberDirectDevice: rememberDirectDevice)
     }
 
-    private func startSharing(_ invitation: DesktopInvitation, display: CGDirectDisplayID, control: Bool, audio: Bool,
+    private func startSharing(_ invitation: DesktopInvitation, display: DesktopShareDisplay, control: Bool, audio: Bool,
                               unattended: Bool, rememberDirectDevice: Bool = false) async {
+        let grant = isDirect && unattended ? directConnection?.authorizedGrant?() : nil
         let authorized = isDirect ? (directConnection?.id == invitation.id && (!unattended ||
-            directConnection?.authorizedGrant?() == DesktopTrustedGrant(control: control, audio: audio)))
+            (grant?.shareDisplay == display && grant?.control == control && grant?.audio == audio)))
             : (enabled && cloud?.peerClient != nil && cloud?.account?.id == accountID)
         guard sessionID == nil, online, authorized, alternateHost?.isHost != true, localSessionAvailable,
               DesktopLocalSession.current.canStart(unattended: unattended) else {
@@ -736,23 +750,41 @@ final class DesktopCenter: ObservableObject, Identifiable {
         sessionID = id; peer = invitation.peer; self.invitation = nil; isHost = true
         unattendedSession = unattended
         controlAllowed = control; audioAllowed = audio; route = "正在准备共享"; message = nil
-        input.displayID = display; input.enabled = control
         hostVideoPreset = .ultra
         privacyRequested = privacyLibrary.settings.automatic
         privacyChanging = privacyRequested
         armTimeout(id, seconds: 45, message: "桌面连接超时。")
         do {
             localSession = .current
+            let displayID: CGDirectDisplayID
+            switch display {
+            case .main:
+                displayID = CGMainDisplayID()
+            case let .fixed(selectedID):
+                displayID = selectedID
+            case let .virtual(preset):
+                try displayActivity.start()
+                let created = try DesktopVirtualDisplay(preset: preset)
+                virtualDisplay = created
+                displayID = created.id
+            }
+            if let preset = display.virtualPreset {
+                try await DesktopVirtualDisplay.waitUntilReady(displayID, preset: preset) { self.sessionID == id }
+                guard sessionID == id else { return }
+            }
+            input.displayID = displayID; input.enabled = control
             try preparePrivacyCurtain()
+            if virtualDisplay == nil { try displayActivity.start() }
             captureRecovery = DesktopCaptureRecovery()
-            try displayActivity.start()
             try await prepareRTC(id: id, host: true)
             guard sessionID == id, let rtc else { return }
+            try checkVirtualDisplay()
             let capture = makeCapture(id: id, rtc: rtc)
             self.capture = capture
-            try await capture.start(displayID: display, sound: audio, excludingWindowIDs: privacyCurtain.windowIDs,
+            try await capture.start(displayID: displayID, sound: audio, excludingWindowIDs: privacyCurtain.windowIDs,
                                     preset: hostVideoPreset)
             guard sessionID == id else { await capture.stop(); return }
+            try checkVirtualDisplay()
             privacyActive = privacyRequested && !localSession.locked
             privacyChanging = false
             let paired = isDirect && !unattended && rememberDirectDevice && directConnection?.remember?() == true
@@ -760,8 +792,24 @@ final class DesktopCenter: ObservableObject, Identifiable {
                        payload: .init(control: control, audio: audio, files: control && !restrictedDirectSession, paired: paired ? true : nil)))
         } catch {
             guard sessionID == id else { return }
-            if !reportCapturePermissionFailure(error) { disconnect(error.localizedDescription) }
+            if !reportCapturePermissionFailure(error) {
+                if display.virtualPreset != nil { endVirtualDisplaySharing(error.localizedDescription) }
+                else { disconnect(error.localizedDescription) }
+            }
         }
+    }
+
+    private func checkVirtualDisplay() throws {
+        if virtualDisplay?.isExtended == false {
+            throw CloudError("虚拟屏已断开或进入镜像模式。")
+        }
+    }
+
+    private func endVirtualDisplaySharing(_ reason: String) {
+        if let id = sessionID, let peer {
+            send(.init(type: "end", id: id, to: peer.id, payload: .init(message: reason)))
+        }
+        disconnect(reason, notify: false)
     }
 
     private func prepareRTC(id: UUID, host: Bool) async throws {
@@ -1045,7 +1093,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                     NSApp.requestUserAttention(.informationalRequest)
                     send(.init(type: "reject", id: id, to: from, payload: .init(message: permissions.snapshot.rejectionMessage(control: unattended.control)))); return
                 }
-                await startSharing(request, display: unattended.displayID ?? CGMainDisplayID(),
+                await startSharing(request, display: unattended.shareDisplay,
                                    control: unattended.control, audio: unattended.audio, unattended: true)
                 return
             }
@@ -1573,6 +1621,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         timeout?.cancel(); timeout = nil; disconnectTimeout?.cancel(); disconnectTimeout = nil
         input.enabled = false; playback.stop(); rtc?.close(); rtc = nil
         let old = capture; capture = nil
+        virtualDisplay = nil
         Task { await old?.stop() }
         if let reason { message = reason }
         if lockAfterDisconnect { lockAfterRemoteDisconnect() }

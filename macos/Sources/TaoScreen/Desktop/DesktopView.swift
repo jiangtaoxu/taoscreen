@@ -1079,21 +1079,17 @@ private struct DesktopUnattendedSettingsView: View {
             Text("设置仅对本机当前 TaoScreen 账号生效。开启后，同账号设备可直接查看所选屏幕，并使用下方允许的功能。")
                 .font(.callout).foregroundStyle(.secondary)
             Group {
-                Picker("共享屏幕", selection: $settings.displayID) {
-                    Text("主屏幕（连接时自动选择）").tag(Optional<CGDirectDisplayID>.none)
-                    ForEach(NSScreen.screens, id: \.desktopID) { screen in
-                        Text(screen.localizedName).tag(Optional(screen.desktopID))
-                    }
-                    if let id = settings.displayID, !NSScreen.screens.contains(where: { $0.desktopID == id }) {
-                        Text("已断开的屏幕（请重新选择）").tag(Optional(id))
-                    }
-                }
+                DesktopShareDisplayPicker(center: center, selection: $settings.shareDisplay)
                 Toggle("允许鼠标键盘控制、粘贴文本和接收文件", isOn: $settings.control)
                 Toggle("共享系统声音", isOn: $settings.audio)
             }.disabled(!settings.enabled)
             DesktopPermissionSection(permissions: center.permissions, control: settings.control, restart: center.restartForPermissions)
-            Text("首次启用需在本机授予屏幕录制权限，允许控制还需辅助功能权限。TaoScreen 保持运行时，锁屏后仍可连接，并在远程画面输入该 Mac 的密码解锁。共享期间会保持显示器唤醒；休眠、退出登录和切换用户会停止共享。开机后需先登录并启动 TaoScreen。")
+            Text("首次启用需在本机授予屏幕录制权限，允许控制还需辅助功能权限。开机后需先登录并启动 TaoScreen。休眠、退出登录或切换用户会停止共享。")
                 .font(.caption).foregroundStyle(.secondary)
+            if settings.shareDisplay.virtualPreset == nil {
+                Text("TaoScreen 保持运行时，锁屏后仍可连接。允许控制时可在远程画面输入该 Mac 的密码解锁。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             if let message = center.message {
                 Text(message).font(.callout).foregroundStyle(.orange)
             }
@@ -1124,7 +1120,7 @@ struct DesktopGlobalStatus: View {
                 }.padding(10).background(.blue.opacity(0.12))
             } else if center.isHost, let peer = center.peer {
                 HStack {
-                    Label("正在向 \(peer.name) 共享屏幕 · \(center.controlAllowed ? "允许控制" : "仅观看")", systemImage: "record.circle")
+                    Label("正在向 \(peer.name) 共享\(center.sharedScreenName) · \(center.controlAllowed ? "允许控制" : "仅观看")", systemImage: "record.circle")
                         .foregroundStyle(.red)
                     Spacer()
                     DesktopLatencyLabel(center: center)
@@ -1142,7 +1138,7 @@ struct DesktopGlobalStatus: View {
 private struct DesktopConsentView: View {
     @ObservedObject var center: DesktopCenter
     @Environment(\.dismiss) private var dismiss
-    @State private var display = CGMainDisplayID()
+    @State private var display = DesktopShareDisplay.main
     @State private var control: Bool
     @State private var sound = false
     @State private var rememberDirectDevice = false
@@ -1160,9 +1156,7 @@ private struct DesktopConsentView: View {
                 Text("这台设备使用了本次直连的连接码。请确认设备是你刚刚发给连接码的对象。")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Picker("共享屏幕", selection: $display) {
-                ForEach(NSScreen.screens, id: \.desktopID) { screen in Text(screen.localizedName).tag(screen.desktopID) }
-            }
+            DesktopShareDisplayPicker(center: center, selection: $display)
             Toggle("允许鼠标键盘控制、粘贴文本和接收文件", isOn: $control)
             Toggle("共享系统声音", isOn: $sound)
             if center.canRememberDirectDevice {
@@ -1174,8 +1168,12 @@ private struct DesktopConsentView: View {
             Text("本次请求约一分钟内有效。权限不足时可先在此电脑授权；如果请求已过期或需要重启，请让对方重新发起连接。")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = center.message { Text(message).font(.callout).foregroundStyle(.orange) }
-            Text("仅授权这一次连接，不会自动接受以后的请求。锁屏后连接会保留，允许控制时可远程输入该 Mac 的密码解锁；休眠、退出登录或切换用户会停止共享。共享期间会保持显示器唤醒。")
+            Text("仅授权这一次连接。共享期间会保持显示器唤醒。休眠、退出登录或切换用户会停止共享。")
                 .font(.caption).foregroundStyle(.secondary)
+            if display.virtualPreset == nil {
+                Text("锁屏后连接会保留。允许控制时可远程输入该 Mac 的密码解锁。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             HStack {
                 Spacer()
                 Button("拒绝", role: .cancel) { center.reject(); dismiss() }
@@ -1190,10 +1188,6 @@ private struct DesktopConsentView: View {
         .onChange(of: center.invitation?.id) { _, id in if id == nil { dismiss() } }
         .interactiveDismissDisabled()
     }
-}
-
-private extension NSScreen {
-    var desktopID: CGDirectDisplayID { (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? CGMainDisplayID() }
 }
 
 private struct DesktopVideoSurface: NSViewRepresentable {
