@@ -6,14 +6,17 @@ import Foundation
 @MainActor
 final class DesktopAccountState: ObservableObject {
     static let accountKey = "taoscreen.account"
+    private static let serverKey = "taoscreen.server"
     static let defaultServer = (Bundle.main.object(forInfoDictionaryKey: "TaoScreenDefaultServerURL") as? String)
         .flatMap { try? CloudCoding.serverURL($0) }?.absoluteString ?? ""
-    @Published var serverText: String
+    @Published private(set) var serverText: String
     @Published private(set) var account: CloudAccount?
     @Published private(set) var needsLogin = true
     @Published private(set) var busy = false
     @Published var message: String?
+    @Published private(set) var loginConflictProvider: DesktopLoginProvider.ID?
     @Published private var loginMethods: DesktopLoginMethods?
+    @Published private(set) var loginMethodsUnavailable = false
     @Published private(set) var authorizingInBrowser = false
     private var loginMethodsServer: URL?
     private var currentLoginMethods: DesktopLoginMethods? {
@@ -40,7 +43,7 @@ final class DesktopAccountState: ObservableObject {
          }) {
         self.defaults = defaults
         self.fetchLoginMethods = fetchLoginMethods
-        serverText = defaults.string(forKey: "taoscreen.server") ?? Self.defaultServer
+        serverText = defaults.string(forKey: Self.serverKey) ?? Self.defaultServer
         if let stored = defaults.string(forKey: "taoscreen.deviceID") {
             guard let id = UUID(uuidString: stored) else {
                 fatalError("独立桌面设备标识损坏，请检查应用偏好，拒绝自动替换设备身份。")
@@ -64,24 +67,36 @@ final class DesktopAccountState: ObservableObject {
         } catch { message = error.localizedDescription }
     }
 
-    func loadProviders() async {
+    func selectServer(_ text: String) throws {
+        let server = try CloudCoding.serverURL(text)
+        guard server.absoluteString != serverText else { return }
+        guard !busy, account == nil else { throw CloudError("请先退出当前账号，再切换登录服务器。") }
+        defaults.set(server.absoluteString, forKey: Self.serverKey)
         loginMethods = nil
         loginMethodsServer = nil
-        guard !serverText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            if !busy { message = nil }
-            return
-        }
+        loginMethodsUnavailable = false
+        message = nil
+        loginConflictProvider = nil
+        serverText = server.absoluteString
+    }
+
+    func loadProviders() async {
+        guard !Task.isCancelled, !serverText.isEmpty else { return }
+        let requestedServer = serverText
+        loginMethods = nil
+        loginMethodsServer = nil
+        loginMethodsUnavailable = false
         do {
-            try await Task.sleep(for: .milliseconds(350))
-            let server = try CloudCoding.serverURL(serverText)
+            let server = try CloudCoding.serverURL(requestedServer)
             let result = try await fetchLoginMethods(server)
             try Task.checkCancellation()
-            guard (try? CloudCoding.serverURL(serverText)) == server else { return }
+            guard serverText == requestedServer else { return }
             loginMethodsServer = server
             loginMethods = result
-            if !busy { message = nil }
         } catch is CancellationError { }
-        catch { if !Task.isCancelled && !busy { message = error.localizedDescription } }
+        catch {
+            if !Task.isCancelled && serverText == requestedServer { loginMethodsUnavailable = true }
+        }
     }
 
     func signIn(provider: DesktopLoginProvider.ID) async {
@@ -92,6 +107,7 @@ final class DesktopAccountState: ObservableObject {
         guard !busy, allowsPasswordLogin else { return }
         busy = true
         message = nil
+        loginConflictProvider = nil
         loginCancelled = false
         defer { busy = false }
         do {
@@ -128,6 +144,7 @@ final class DesktopAccountState: ObservableObject {
         guard !busy, enabledProviders.contains(where: { $0.id == provider }) else { return }
         busy = true
         message = nil
+        loginConflictProvider = nil
         loginCancelled = false
         authorizingInBrowser = true
         defer {
@@ -159,6 +176,10 @@ final class DesktopAccountState: ObservableObject {
             let value = try await api.exchangeOAuth(login, provider: provider, code: code, deviceID: deviceID)
             try await completeSignIn(value, api: api, server: server)
         } catch is CancellationError { message = "已取消登录。" }
+        // 旧版服务端在登录兑换时也使用 identity_conflict 表示邮箱已占用。
+        catch let error as CloudAPIError where !linking && ["email_already_registered", "identity_conflict"].contains(error.code) {
+            loginConflictProvider = provider
+        }
         catch { message = error.localizedDescription }
     }
 
@@ -182,7 +203,7 @@ final class DesktopAccountState: ObservableObject {
         account = value.account
         needsLogin = false
         defaults.set(encodedAccount, forKey: Self.accountKey)
-        defaults.set(server.absoluteString, forKey: "taoscreen.server")
+        defaults.set(server.absoluteString, forKey: Self.serverKey)
         serverText = server.absoluteString
         await loadIdentities()
     }
@@ -200,6 +221,7 @@ final class DesktopAccountState: ObservableObject {
         guard !busy else { return }
         busy = true
         message = nil
+        loginConflictProvider = nil
         defer { busy = false }
         DesktopCenter.shared.shutdown()
         do {

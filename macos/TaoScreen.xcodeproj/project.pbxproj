@@ -40,6 +40,7 @@
 		9632181D4FD4BF30C7E032C9 /* DesktopAccountState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */; };
 		9F1BCC24B71E751E556D4034 /* DesktopModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */; };
 		A016DA788CAB7DFD543BD7B7 /* DesktopRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2B7CED1A4BFEC42307491B /* DesktopRTC.swift */; };
+		A0D4FEB94A7B8F86EF810C32 /* LoginProviders.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D8E6EE91EBC039C60045E3E /* LoginProviders.xcassets */; };
 		A22ACF1DFFEA81DCE0A617D6 /* DesktopPortService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B073A16E24E13119920800E8 /* DesktopPortService.swift */; };
 		A6E2360ED7BF2E074F43D0B9 /* DesktopFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6554A8E31C37E544E8532089 /* DesktopFiles.swift */; };
 		A77FADA5F98332C1542D8C68 /* DesktopDirectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B01CA5D2ACCC8EB650477D0 /* DesktopDirectView.swift */; };
@@ -50,6 +51,7 @@
 		D5572EC9E06D12DEB8E9F509 /* DesktopCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */; };
 		DD6DD3391E9208D7D9E68D6D /* DesktopPortWindowCloseGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */; };
 		E68BB1A05BB9205875F83D80 /* DesktopPrivacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E9ED68056A6AFE2AA3A7F4 /* DesktopPrivacy.swift */; };
+		E758AC6848DB9376EA71DC72 /* DesktopAccountLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8AA74E1ACE43DB78EE68ABB /* DesktopAccountLoginView.swift */; };
 		EAAD58FFAA0F5C2685E6B878 /* DesktopUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4962CC279D7C28D68A154F8D /* DesktopUpdates.swift */; };
 		EB5C6C3AF1B49B50F1F3343E /* DesktopRemoteSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */; };
 		FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 53CA7A24A877328AB638E714 /* AppIcon.icns */; };
@@ -88,6 +90,7 @@
 		97FFBD95A4C75052F667FF87 /* TaoScreenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaoScreenApp.swift; sourceTree = "<group>"; };
 		99F66111086D1CE95A29008F /* DesktopDirectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDirectService.swift; sourceTree = "<group>"; };
 		9B10B1284F4D9496DE58D0B0 /* DesktopPortForwardingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwardingModels.swift; sourceTree = "<group>"; };
+		9D8E6EE91EBC039C60045E3E /* LoginProviders.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = LoginProviders.xcassets; sourceTree = "<group>"; };
 		A075650BB2BA71103F99F924 /* DesktopNativeDrag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNativeDrag.swift; sourceTree = "<group>"; };
 		A4EF764EABAF0C23B093E3DF /* DesktopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopView.swift; sourceTree = "<group>"; };
 		A5D592C736F3C9072D397B8F /* DesktopPortForwardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortForwardingView.swift; sourceTree = "<group>"; };
@@ -102,6 +105,7 @@
 		DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRemoteSecurity.swift; sourceTree = "<group>"; };
 		E129B417A3135521935DE3CA /* RemoteAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteAvailability.swift; sourceTree = "<group>"; };
 		E6468C6ADF9F7C425873B137 /* DesktopFileHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFileHelpers.swift; sourceTree = "<group>"; };
+		E8AA74E1ACE43DB78EE68ABB /* DesktopAccountLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopAccountLoginView.swift; sourceTree = "<group>"; };
 		EB3D222432C1EC7A82F041E7 /* WebRTC-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "WebRTC-LICENSE.txt"; sourceTree = "<group>"; };
 		EC82CDD925DC235ACBC73529 /* DesktopPortSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortSession.swift; sourceTree = "<group>"; };
 		ED07E4CDD35D7B2CF0DC2EC7 /* DesktopVirtualDisplayBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DesktopVirtualDisplayBridge.h; sourceTree = "<group>"; };
@@ -185,6 +189,14 @@
 			path = include;
 			sourceTree = "<group>";
 		};
+		8890F9E9EE09F2EF411476A4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9D8E6EE91EBC039C60045E3E /* LoginProviders.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		A04DC249485D7836C772411C /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -239,6 +251,7 @@
 			children = (
 				36D27A711237CFA3EB2B7ACD /* AccountTypes.swift */,
 				B1D9394C1208E3ED1B916708 /* CloudJSON.swift */,
+				E8AA74E1ACE43DB78EE68ABB /* DesktopAccountLoginView.swift */,
 				CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */,
 				75392AD840636B8B534BB4A2 /* DesktopAPI.swift */,
 				090A013BFD01F9D87F7622F8 /* DesktopOAuthLogin.swift */,
@@ -253,6 +266,7 @@
 				E29AD879AD3F772FAA6BD6D4 /* Account */,
 				B75C4CEC96D0F90B20FEC02B /* Desktop */,
 				2CFE17A8E3F82A039E222F6E /* Files */,
+				8890F9E9EE09F2EF411476A4 /* Resources */,
 				12240CAD1D6C85052C990057 /* Support */,
 				17738A8417BF260B6875DBB9 /* Updates */,
 			);
@@ -327,6 +341,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */,
+				A0D4FEB94A7B8F86EF810C32 /* LoginProviders.xcassets in Resources */,
 				3022B033982F8F4198E626E7 /* WebRTC-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -341,6 +356,7 @@
 				4791E6649902B8BEE2093927 /* AccountTypes.swift in Sources */,
 				24A5B0EB1DC28850F0B3ABC2 /* CloudJSON.swift in Sources */,
 				845AC05FEAAA2F2E4368275C /* DesktopAPI.swift in Sources */,
+				E758AC6848DB9376EA71DC72 /* DesktopAccountLoginView.swift in Sources */,
 				9632181D4FD4BF30C7E032C9 /* DesktopAccountState.swift in Sources */,
 				4AEE9475952F5BEC0E085CAB /* DesktopCapture.swift in Sources */,
 				D5572EC9E06D12DEB8E9F509 /* DesktopCenter.swift in Sources */,

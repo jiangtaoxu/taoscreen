@@ -35,6 +35,13 @@ class VersionTests(unittest.TestCase):
     def test_explicit_version_is_not_silently_changed(self):
         self.assertEqual(release.resolve_version('2.0.0', False, 'arm64', pathlib.Path('unused')), '2.0.0')
 
+    def test_universal_build_rejects_upload_before_contacting_any_services(self):
+        with mock.patch('sys.argv', ['package-release.py', '1.0.21', '--universal', '--upload']), \
+             mock.patch.object(release, 'check_config') as config:
+            with self.assertRaises(SystemExit):
+                release.main()
+            config.assert_not_called()
+
     def test_patch_overflow_stops(self):
         with self.assertRaises(SystemExit):
             release.next_version('1.0.9999')
@@ -106,6 +113,20 @@ class SparkleReleaseTests(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 release.upload(self.version, self.arch)
             upload.assert_not_called()
+
+    def test_universal_appcast_offers_one_package_without_an_architecture_filter(self):
+        archive = self.archive.with_name(release.package_name(self.version, 'universal', 'zip'))
+        archive.write_bytes(self.archive.read_bytes())
+        feed = release.appcast_data(self.version, 'universal', self.notes, archive.stat().st_size, self.signature)
+        item = release.ET.fromstring(feed).find('channel/item')
+        self.assertIsNone(item.find(f'{{{release.SPARKLE_NS}}}hardwareRequirements'))
+        self.assertTrue(item.find('enclosure').get('url').endswith(archive.name))
+        with mock.patch.object(release, 'check_update_key'), mock.patch.object(release, 'sparkle_tool', return_value='sign_update'), \
+             mock.patch.object(release.subprocess, 'run') as run:
+            release.verify_appcast(feed, self.version, 'universal', archive, self.info)
+            self.assertEqual(run.call_args.args[0][-2:], [str(archive), self.signature])
+            with self.assertRaises(SystemExit):
+                release.verify_appcast(feed, self.version, 'arm64', self.archive, self.info)
 
     def test_uploads_both_packages_before_activating_either_feed(self):
         objects, uploaded = {}, []

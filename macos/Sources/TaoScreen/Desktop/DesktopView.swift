@@ -57,13 +57,17 @@ struct DesktopView: View {
                         }.padding(.bottom, 2)
                     }
                 }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .desktopWorkspacePanel()
             if center.online && !center.relayAvailable {
                 Label("当前服务支持设备直连，部分跨网连接可能无法建立。", systemImage: "network")
                     .font(.caption).foregroundStyle(.secondary)
                     .help("当前服务未配置 TURN 中继：内网、Tailscale 或可打洞的网络可直连。")
             }
-        }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .padding(.horizontal, 24).padding(.vertical, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sheet(item: $settingsSheet) { sheet in
             switch sheet {
             case .permissions: DesktopPermissionSettingsView(center: center)
@@ -76,8 +80,10 @@ struct DesktopView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Image(systemName: "display.2").font(.system(size: 22, weight: .medium)).foregroundStyle(Color.accentColor)
-                .frame(width: 46, height: 46).background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+            Image(systemName: "display.2").font(.system(size: 22, weight: .medium))
+                .foregroundStyle(DesktopWorkspaceStyle.accent)
+                .frame(width: 46, height: 46)
+                .background(DesktopWorkspaceStyle.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 5) {
                 Text("远程桌面").font(.system(size: 22, weight: .semibold))
                 HStack(spacing: 6) {
@@ -90,6 +96,7 @@ struct DesktopView: View {
                 .controlSize(.regular)
             Toggle("开启远程桌面", isOn: $center.enabled).toggleStyle(.switch).font(.callout).fixedSize()
         }
+        .desktopWorkspacePanel()
     }
 
     private var settingsShortcuts: some View {
@@ -109,7 +116,7 @@ struct DesktopView: View {
             Divider().frame(height: 28)
             DesktopPrivacyShortcut(center: center, library: center.privacyLibrary) { settingsSheet = .privacy }
         }
-        .padding(4).background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
+        .desktopWorkspacePanel(padding: 4)
     }
 
     private var permissionSummary: String {

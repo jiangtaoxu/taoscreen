@@ -44,121 +44,151 @@ final class DesktopAppDelegate: NSObject, NSApplicationDelegate {
 private struct DesktopRootView: View {
     @ObservedObject var account: DesktopAccountState
     @State private var showingAccount = false
-    @State private var loginEmail = ""
-    @State private var loginPassword = ""
-    @State private var selectedMode: ConnectionMode?
+    @State private var loginSheet: LoginSheet?
+    @State private var selectedMode: ConnectionMode = .direct
 
-    private enum ConnectionMode: Hashable { case direct, account }
-    private var mode: ConnectionMode { selectedMode ?? (account.needsLogin ? .direct : .account) }
+    private enum ConnectionMode: CaseIterable, Hashable {
+        case direct, account
 
+        var title: String { self == .direct ? "免登录直连" : "账号直连" }
+        var symbol: String { self == .direct ? "point.3.connected.trianglepath.dotted" : "person.crop.circle" }
+    }
+    private enum LoginSheet: String, Identifiable {
+        case settings, password
+        var id: Self { self }
+    }
     var body: some View {
         VStack(spacing: 0) {
+            navigationBar
             DesktopGlobalStatus()
             DesktopGlobalStatus(center: DesktopDirectService.shared.center)
             DesktopPortRequestBanner(service: DesktopCenter.shared.portService)
-            Picker("连接方式", selection: Binding(get: { mode }, set: { selectedMode = $0 })) {
-                Text("免登录直连").tag(ConnectionMode.direct)
-                Text("账号连接").tag(ConnectionMode.account)
-            }
-            .pickerStyle(.segmented).labelsHidden()
-            .frame(width: 260).padding(.top, 17)
-            switch mode {
+            switch selectedMode {
             case .direct: DesktopDirectView(service: .shared)
             case .account:
-                if account.needsLogin { loginForm }
-                else { DesktopView(center: .shared) }
+                if account.needsLogin {
+                    DesktopAccountLoginView(account: account) { loginSheet = .password }
+                } else {
+                    DesktopView(center: .shared)
+                }
             }
         }
+        .background {
+            Color(nsColor: .windowBackgroundColor)
+                .overlay(alignment: .top) {
+                    LinearGradient(colors: [DesktopWorkspaceStyle.accent.opacity(0.13), .clear],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                }
+        }
+        .tint(DesktopWorkspaceStyle.accent)
         .toolbar {
-            ToolbarItem {
-                DesktopUpdateButton()
-            }
-            ToolbarItem {
-                if let current = account.account, !account.needsLogin {
-                    Button { showingAccount = true } label: { Label(current.email, systemImage: "person.crop.circle") }
-                        .popover(isPresented: $showingAccount) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(current.email).font(.headline)
-                                Text(current.server).font(.caption).textSelection(.enabled)
-                                Text("已绑定的登录方式").foregroundStyle(.secondary)
-                                ForEach(account.identities) { identity in
-                                    Label("\(identity.provider.title) · \(identity.email)", systemImage: "checkmark.circle")
-                                        .font(.caption)
-                                }
-                                ForEach(account.enabledProviders) { provider in
-                                    if !account.identities.contains(where: { $0.provider == provider.id }) {
-                                        Button("绑定 \(provider.id.title)") { Task { await account.link(provider: provider.id) } }
-                                            .disabled(account.busy)
-                                    }
-                                }
-                                if account.busy { Button("取消登录") { account.cancelLogin() } }
-                                if let message = account.message { Text(message).foregroundStyle(.red) }
-                                Button("退出账号") { Task { await account.signOut() } }.disabled(account.busy)
-                            }.padding(20).frame(minWidth: 360)
-                                .task { await account.loadIdentities(); await account.loadProviders() }
-                        }
-                }
-            }
+            ToolbarItem { DesktopUpdateButton() }
+        }
+        .sheet(item: $loginSheet) { sheet in
+            DesktopLoginSettings(account: account, startsWithPassword: sheet == .password)
         }
     }
 
-    private var loginForm: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Label("TaoScreen", systemImage: "display.2").font(.largeTitle.bold())
-            Text("两台 Mac 登录同一个独立桌面账号，即可连接。")
-                .foregroundStyle(.secondary)
-            TextField("服务地址，例如 https://desktop.example.com", text: $account.serverText).disabled(account.busy)
-            if account.allowsPasswordLogin {
-                TextField("邮箱", text: $loginEmail).textContentType(.username).disabled(account.busy)
-                SecureField("密码", text: $loginPassword).textContentType(.password).privacySensitive()
-                    .disabled(account.busy).onSubmit(signInWithPassword)
-                Button(action: signInWithPassword) {
-                    Label("使用邮箱和密码登录", systemImage: "key")
-                        .padding(.vertical, 6).frame(maxWidth: .infinity, alignment: .leading)
-                }.buttonStyle(.borderedProminent)
-                    .disabled(account.busy || loginEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || loginPassword.isEmpty)
-            }
-            ForEach(account.enabledProviders) { provider in
-                Button { Task { await account.signIn(provider: provider.id) } } label: {
-                    HStack {
-                        Image(systemName: "person.crop.circle")
-                        Text("使用 \(provider.id.title) 登录")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                    }.padding(.vertical, 6).frame(maxWidth: .infinity)
-                }.buttonStyle(.borderedProminent)
-                    .disabled(account.busy)
-            }
-            if account.providersLoaded && !account.allowsPasswordLogin && account.enabledProviders.isEmpty {
-                Text("服务端尚未启用登录方式，请联系管理员。")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if let message = account.message { Text(message).foregroundStyle(.red).textSelection(.enabled) }
-            if account.busy {
-                HStack {
-                    ProgressView().controlSize(.small)
-                    Text(account.authorizingInBrowser ? "请在浏览器中完成授权…" : "正在处理账号请求…")
-                    Button("取消") { account.cancelLogin() }
+    private var navigationBar: some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 4) {
+                ForEach(ConnectionMode.allCases, id: \.self) { mode in
+                    Button { selectedMode = mode } label: {
+                        Label(mode.title, systemImage: mode.symbol)
+                    }
+                    .buttonStyle(DesktopModeButtonStyle(selected: selectedMode == mode))
+                    .accessibilityAddTraits(selectedMode == mode ? .isSelected : [])
                 }
-            } else if account.account != nil {
-                Button("退出当前账号以切换登录") { Task { await account.signOut() } }
             }
-            if account.allowsPasswordLogin {
-                Text("如需开通本地账号，请联系服务器管理员。").font(.caption).foregroundStyle(.secondary)
-            }
-        }.textFieldStyle(.roundedBorder)
-            .padding(36).frame(maxWidth: 540).frame(maxWidth: .infinity, maxHeight: .infinity)
-            .task(id: account.serverText) { await account.loadProviders() }
-            .onChange(of: account.serverText) { loginPassword = "" }
-            .onDisappear { loginPassword = "" }
+            .padding(4)
+            .background(DesktopWorkspaceStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("连接方式")
+            Spacer()
+            accountControl
+        }
+        .padding(.horizontal, 24)
+        .frame(height: 60)
+        .background(.regularMaterial)
+        .overlay(alignment: .bottom) { Divider() }
     }
 
-    private func signInWithPassword() {
-        let email = loginEmail.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard account.allowsPasswordLogin, !account.busy, !email.isEmpty, !loginPassword.isEmpty else { return }
-        let password = loginPassword
-        loginPassword = ""
-        Task { await account.signIn(email: email, password: password) }
+    @ViewBuilder private var accountControl: some View {
+        if let current = account.account, !account.needsLogin {
+            Button { showingAccount = true } label: {
+                Label(current.email, systemImage: "person.crop.circle")
+                    .lineLimit(1).truncationMode(.middle)
+            }
+            .frame(maxWidth: 216, alignment: .trailing)
+            .popover(isPresented: $showingAccount) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(current.email).font(.headline)
+                    Text("已绑定的登录方式").foregroundStyle(.secondary)
+                    ForEach(account.identities) { identity in
+                        Label("\(identity.provider.title) · \(identity.email)", systemImage: "checkmark.circle")
+                            .font(.caption)
+                    }
+                    ForEach(account.enabledProviders) { provider in
+                        if !account.identities.contains(where: { $0.provider == provider.id }) {
+                            Button("绑定 \(provider.id.title)") { Task { await account.link(provider: provider.id) } }
+                                .disabled(account.busy)
+                        }
+                    }
+                    if account.busy { Button("取消登录") { account.cancelLogin() } }
+                    if let message = account.message { Text(message).foregroundStyle(.red) }
+                    Button("退出账号") { Task { await account.signOut() } }.disabled(account.busy)
+                }
+                .padding(20).frame(minWidth: 360)
+                .task { await account.loadIdentities(); await account.loadProviders() }
+            }
+        } else {
+            Button { loginSheet = .settings } label: {
+                Label("账号登录设置", systemImage: "gearshape")
+                    .labelStyle(.iconOnly)
+            }
+            .help("账号登录设置")
+            .disabled(account.busy)
+        }
+    }
+}
+
+private struct DesktopModeButtonStyle: ButtonStyle {
+    let selected: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.callout.weight(selected ? .semibold : .medium))
+            .foregroundStyle(selected ? DesktopWorkspaceStyle.accent : Color(nsColor: .secondaryLabelColor))
+            .frame(width: 128, height: 32)
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(DesktopWorkspaceStyle.surface)
+                        .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .opacity(configuration.isPressed ? 0.68 : 1)
+    }
+}
+
+enum DesktopWorkspaceStyle {
+    static let accent = Color(nsColor: NSColor(name: nil) { appearance in
+        if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+            return NSColor(srgbRed: 0.52, green: 0.74, blue: 1, alpha: 1)
+        }
+        return NSColor(srgbRed: 0.12, green: 0.35, blue: 0.69, alpha: 1)
+    })
+    static let surface = Color(nsColor: .controlBackgroundColor)
+}
+
+extension View {
+    func desktopWorkspacePanel(padding: CGFloat = 16, emphasized: Bool = false) -> some View {
+        let outline = emphasized ? DesktopWorkspaceStyle.accent.opacity(0.30) : Color(nsColor: .separatorColor)
+        let shape = RoundedRectangle(cornerRadius: 14)
+        return self.padding(padding)
+            .background(DesktopWorkspaceStyle.surface, in: shape)
+            .overlay { shape.strokeBorder(outline).allowsHitTesting(false) }
     }
 }
 
