@@ -85,10 +85,10 @@ private struct DesktopRootView: View {
                                     Label("\(identity.provider.title) · \(identity.email)", systemImage: "checkmark.circle")
                                         .font(.caption)
                                 }
-                                ForEach(DesktopLoginProvider.ID.allCases) { provider in
-                                    if !account.identities.contains(where: { $0.provider == provider }) {
-                                        Button("绑定 \(provider.title)") { Task { await account.link(provider: provider) } }
-                                            .disabled(account.busy || !account.providers.contains(where: { $0.id == provider && $0.enabled }))
+                                ForEach(account.enabledProviders) { provider in
+                                    if !account.identities.contains(where: { $0.provider == provider.id }) {
+                                        Button("绑定 \(provider.id.title)") { Task { await account.link(provider: provider.id) } }
+                                            .disabled(account.busy)
                                     }
                                 }
                                 if account.busy { Button("取消登录") { account.cancelLogin() } }
@@ -118,7 +118,7 @@ private struct DesktopRootView: View {
                 }.buttonStyle(.borderedProminent)
                     .disabled(account.busy || loginEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || loginPassword.isEmpty)
             }
-            ForEach(account.providers.filter(\.enabled)) { provider in
+            ForEach(account.enabledProviders) { provider in
                 Button { Task { await account.signIn(provider: provider.id) } } label: {
                     HStack {
                         Image(systemName: "person.crop.circle")
@@ -129,7 +129,7 @@ private struct DesktopRootView: View {
                 }.buttonStyle(.borderedProminent)
                     .disabled(account.busy)
             }
-            if account.providersLoaded && !account.allowsPasswordLogin && !account.providers.contains(where: \.enabled) {
+            if account.providersLoaded && !account.allowsPasswordLogin && account.enabledProviders.isEmpty {
                 Text("服务端尚未启用登录方式，请联系管理员。")
                     .font(.caption).foregroundStyle(.secondary)
             }

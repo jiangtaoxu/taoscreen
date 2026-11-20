@@ -370,6 +370,17 @@ def verify_github_app(app, version):
 
 def build_github_dmg(tag):
     version = github_version(tag)
+    default_server = os.environ.get('TAOSCREEN_DEFAULT_SERVER_URL', '')
+    if default_server:
+        try:
+            parsed = urllib.parse.urlsplit(default_server)
+            port = parsed.port
+        except ValueError:
+            raise SystemExit('TAOSCREEN_DEFAULT_SERVER_URL 必须为 HTTPS 根地址') from None
+        if (parsed.scheme != 'https' or not parsed.hostname or parsed.username is not None or
+                port == 0 or parsed.path not in ('', '/') or any(c.isspace() or c in '?#' for c in default_server)):
+            raise SystemExit('TAOSCREEN_DEFAULT_SERVER_URL 必须为 HTTPS 根地址')
+        default_server = default_server.removesuffix('/')
     app = root / 'dist/TaoScreen.app'
     package = app.parent / package_name(version, 'universal')
     with tempfile.TemporaryDirectory(prefix='taoscreen-github-release-') as work:
@@ -389,11 +400,14 @@ def build_github_dmg(tag):
             'TAOSCREEN_PROVISIONING_PROFILE': '',
             'TAOSCREEN_BUNDLE_ID': '',
             'TAOSCREEN_OAUTH_CALLBACK_SCHEME': '',
-            'TAOSCREEN_DEFAULT_SERVER_URL': '',
+            'TAOSCREEN_DEFAULT_SERVER_URL': default_server,
             'TAOSCREEN_UPDATE_FEED_URL': '',
             'TAOSCREEN_UPDATE_PUBLIC_KEY': '',
         })
         verify_github_app(app, version)
+        built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        if built_info.get('TaoScreenDefaultServerURL') != default_server:
+            raise SystemExit('构建应用的默认服务器与发布配置不一致')
         disk_image = work / package.name
         create_disk_image(app, disk_image, version)
         shutil.move(disk_image, package)

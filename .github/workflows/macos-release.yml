@@ -40,6 +40,8 @@ jobs:
       - name: 安装 XcodeGen
         run: brew install xcodegen
       - name: 按 tag 构建通用 App
+        env:
+          TAOSCREEN_DEFAULT_SERVER_URL: ${{ vars.TAOSCREEN_DEFAULT_SERVER_URL }}
         run: |
           python3 macos/scripts/package-release.py --github-dmg "$TAG_NAME"
           ditto -c -k --sequesterRsrc --keepParent macos/dist/TaoScreen.app "$RUNNER_TEMP/TaoScreen-app.zip"

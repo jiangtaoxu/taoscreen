@@ -4,6 +4,46 @@ import Testing
 @testable import TaoScreen
 
 struct DesktopOAuthTests {
+    @Test @MainActor func loginOptionsOnlyFollowTheSelectedServer() async throws {
+        let suite = "TaoScreenLoginOptionsTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let account = DesktopAccountState(defaults: defaults) { server in
+            switch server.host {
+            case "official.example.test":
+                return .init(providers: [.init(id: .github, enabled: true), .init(id: .google, enabled: true)],
+                             passwordLogin: true)
+            case "private.example.test":
+                return .init(providers: [.init(id: .github, enabled: false), .init(id: .google, enabled: true)],
+                             passwordLogin: false)
+            case "local.example.test":
+                return .init(providers: [], passwordLogin: true)
+            default:
+                throw CloudError("服务器不可用")
+            }
+        }
+
+        account.serverText = "https://official.example.test"
+        await account.loadProviders()
+        #expect(account.enabledProviders.map(\.id) == [.github, .google])
+        #expect(account.allowsPasswordLogin)
+
+        account.serverText = "https://private.example.test"
+        #expect(account.enabledProviders.isEmpty)
+        #expect(!account.allowsPasswordLogin)
+        await account.loadProviders()
+        #expect(account.enabledProviders.map(\.id) == [.google])
+        #expect(!account.allowsPasswordLogin)
+
+        account.serverText = "https://local.example.test"
+        await account.loadProviders()
+        #expect(account.enabledProviders.isEmpty && account.allowsPasswordLogin)
+
+        account.serverText = "https://offline.example.test"
+        await account.loadProviders()
+        #expect(account.enabledProviders.isEmpty && !account.providersLoaded)
+    }
+
     @Test func generatesIndependentPKCEAndOnlyAcceptsOwnServerAndProvider() throws {
         let login = try DesktopOAuthLogin(), other = try DesktopOAuthLogin()
         #expect(DesktopOAuthLogin.validSecret(login.state))

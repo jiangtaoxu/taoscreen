@@ -13,24 +13,33 @@ final class DesktopAccountState: ObservableObject {
     @Published private(set) var needsLogin = true
     @Published private(set) var busy = false
     @Published var message: String?
-    @Published private(set) var providers: [DesktopLoginProvider] = []
-    @Published private(set) var providersLoaded = false
+    @Published private var loginMethods: DesktopLoginMethods?
     @Published private(set) var authorizingInBrowser = false
-    @Published private var passwordLogin = false
     private var loginMethodsServer: URL?
-    var allowsPasswordLogin: Bool {
-        passwordLogin && (try? CloudCoding.serverURL(serverText)) == loginMethodsServer
+    private var currentLoginMethods: DesktopLoginMethods? {
+        guard let loginMethodsServer, (try? CloudCoding.serverURL(serverText)) == loginMethodsServer else { return nil }
+        return loginMethods
     }
+    var providersLoaded: Bool { currentLoginMethods != nil }
+    var enabledProviders: [DesktopLoginProvider] { currentLoginMethods?.providers.filter(\.enabled) ?? [] }
+    var allowsPasswordLogin: Bool { currentLoginMethods?.passwordLogin == true }
     @Published private(set) var identities: [DesktopLinkedIdentity] = []
     private let browser = DesktopOAuthBrowser()
     private var loginCancelled = false
     private var client: DesktopAPI?
     private let defaults: UserDefaults
+    private let fetchLoginMethods: (URL) async throws -> DesktopLoginMethods
     private let deviceID: UUID
     var peerClient: DesktopAPI? { needsLogin ? nil : client }
 
-    init(defaults: UserDefaults = DesktopRuntime.defaults) {
+    init(defaults: UserDefaults = DesktopRuntime.defaults,
+         fetchLoginMethods: @escaping (URL) async throws -> DesktopLoginMethods = { server in
+             let api = DesktopAPI(server: server)
+             try await api.verifyService()
+             return try await api.loginMethods()
+         }) {
         self.defaults = defaults
+        self.fetchLoginMethods = fetchLoginMethods
         serverText = defaults.string(forKey: "taoscreen.server") ?? Self.defaultServer
         if let stored = defaults.string(forKey: "taoscreen.deviceID") {
             guard let id = UUID(uuidString: stored) else {
@@ -56,9 +65,7 @@ final class DesktopAccountState: ObservableObject {
     }
 
     func loadProviders() async {
-        providersLoaded = false
-        providers = []
-        passwordLogin = false
+        loginMethods = nil
         loginMethodsServer = nil
         guard !serverText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             if !busy { message = nil }
@@ -67,15 +74,11 @@ final class DesktopAccountState: ObservableObject {
         do {
             try await Task.sleep(for: .milliseconds(350))
             let server = try CloudCoding.serverURL(serverText)
-            let api = DesktopAPI(server: server)
-            try await api.verifyService()
-            let result = try await api.loginMethods()
+            let result = try await fetchLoginMethods(server)
             try Task.checkCancellation()
             guard (try? CloudCoding.serverURL(serverText)) == server else { return }
             loginMethodsServer = server
-            providers = result.providers
-            passwordLogin = result.passwordLogin == true
-            providersLoaded = true
+            loginMethods = result
             if !busy { message = nil }
         } catch is CancellationError { }
         catch { if !Task.isCancelled && !busy { message = error.localizedDescription } }
@@ -122,7 +125,7 @@ final class DesktopAccountState: ObservableObject {
     }
 
     private func authenticate(provider: DesktopLoginProvider.ID, linking: Bool) async {
-        guard !busy else { return }
+        guard !busy, enabledProviders.contains(where: { $0.id == provider }) else { return }
         busy = true
         message = nil
         loginCancelled = false
