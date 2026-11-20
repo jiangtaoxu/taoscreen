@@ -23,6 +23,19 @@
 
 ---
 
+## 下载并试用：把本机听写送到远端 Mac
+
+[下载官网通用 DMG](https://taoscreen.xujiangtao.com/download) · [GitHub Release 备用下载](https://github.com/jiangtaoxu/taoscreen/releases/tag/v1.0.23)  
+适用于 macOS 14 或更新版本，支持 Apple Silicon 和 Intel。打开 DMG，将 TaoScreen 拖入「应用程序」。
+
+1. 在同一局域网或互通的 Tailscale 网络里，两台 Mac 都打开 TaoScreen。用「免登录直连」和 6 位临时密码连接；被控端接受时允许键鼠控制和文本粘贴。
+2. 在远端 Mac 打开「备忘录」，点进正文。然后在**远程窗口标题栏**点击麦克风图标，切到「本机输入法」。
+3. 在控制端用 macOS 听写说一句话。结束听写后，确认识别出的文字出现在远端备忘录里。
+
+首次连接需在被控端按提示授予[录屏和辅助功能权限](docs/user-guide.md#1-安装与首次权限配置)。无需注册账号或部署服务器。
+
+---
+
 **TaoScreen（涛子远程桌面）** 是一款专注于原生体验与数据自主可控的远程桌面项目。当前已完整实现 **macOS 14+ 原生桌面端**（Apple Silicon / Intel）与 **Go 自托管账号信令服务端**，后续规划覆盖 **iOS / Android 手机端** 与 **Windows 平台**。
 
 客户端启动后默认打开 **「免登录直连」**，可以通过 **Tailscale** 或局域网连接。切换到 **「账号直连」** 后，可使用官方服务或自己的信令服务管理同账号设备。
