@@ -13,6 +13,7 @@ let package = Package(
         .executableTarget(name: "TaoScreen", dependencies: [.product(name: "WebRTC", package: "WebRTC"),
                                                       .product(name: "Sparkle", package: "Sparkle"),
                                                       "DesktopVirtualDisplayBridge"],
+                          resources: [.process("Resources/LoginProviders.xcassets")],
                           swiftSettings: [.swiftLanguageMode(.v5)],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .testTarget(name: "TaoScreenTests", dependencies: ["TaoScreen"])

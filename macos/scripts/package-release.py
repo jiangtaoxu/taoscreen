@@ -78,11 +78,15 @@ def check_config(args):
             raise SystemExit('发布源和服务器地址必须使用 HTTPS 根地址')
 
 
-def notarize(submission, target):
-    command = ['xcrun', 'notarytool', 'submit', str(submission), '--keychain-profile', NOTARY_PROFILE, '--wait']
+def notary_command(*arguments):
+    command = ['xcrun', 'notarytool', *arguments, '--keychain-profile', NOTARY_PROFILE]
     if keychain := os.environ.get('TAOSCREEN_NOTARY_KEYCHAIN'):
         command.extend(['--keychain', keychain])
-    subprocess.run(command, check=True)
+    return command
+
+
+def notarize(submission, target):
+    subprocess.run(notary_command('submit', str(submission), '--wait'), check=True)
     subprocess.run(['xcrun', 'stapler', 'staple', str(target)], check=True)
 
 
@@ -152,8 +156,10 @@ def appcast_data(version, arch, notes, size, signature):
     ET.SubElement(item, 'description', {f'{{{SPARKLE_NS}}}format': 'plain-text'}).text = notes
     ET.SubElement(item, 'pubDate').text = format_datetime(datetime.now(timezone.utc))
     for name, value in (('version', build_number(version)), ('shortVersionString', version),
-                        ('minimumSystemVersion', '14.0'), ('hardwareRequirements', arch)):
+                        ('minimumSystemVersion', '14.0')):
         ET.SubElement(item, f'{{{SPARKLE_NS}}}{name}').text = value
+    if arch != 'universal':
+        ET.SubElement(item, f'{{{SPARKLE_NS}}}hardwareRequirements').text = arch
     ET.SubElement(item, 'enclosure', {
         'url': f'{RELEASE_ORIGIN}/macos/{version}/{package_name(version, arch, "zip")}',
         'length': str(size), 'type': 'application/octet-stream', f'{{{SPARKLE_NS}}}edSignature': signature})
@@ -168,7 +174,8 @@ def verify_appcast(data, version, arch, archive, info):
         raise SystemExit('Sparkle 清单必须包含本次唯一版本')
     item = items[0]
     expected = {'version': build_number(version), 'shortVersionString': version,
-                'minimumSystemVersion': info['LSMinimumSystemVersion'], 'hardwareRequirements': arch}
+                'minimumSystemVersion': info['LSMinimumSystemVersion'],
+                'hardwareRequirements': None if arch == 'universal' else arch}
     if any(item.findtext(f'{{{SPARKLE_NS}}}{key}') != value for key, value in expected.items()):
         raise SystemExit('Sparkle 清单的版本、系统要求或架构不匹配')
     enclosure = item.find('enclosure')
@@ -359,10 +366,10 @@ def github_version(tag):
     return version
 
 
-def verify_github_app(app, version):
+def verify_universal_app(app, version):
     info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
     if info.get('CFBundleShortVersionString') != version or info.get('CFBundleVersion') != build_number(version):
-        raise SystemExit('构建应用的版本与 GitHub tag 不一致，已停止打包')
+        raise SystemExit('构建应用的版本与打包版本不一致')
     architectures = subprocess.check_output(['lipo', '-archs', str(app / 'Contents/MacOS/TaoScreen')], text=True)
     if set(architectures.split()) != {'arm64', 'x86_64'}:
         raise SystemExit('构建应用缺少 Apple Silicon 或 Intel 架构，已停止打包')
@@ -404,7 +411,7 @@ def build_github_dmg(tag):
             'TAOSCREEN_UPDATE_FEED_URL': '',
             'TAOSCREEN_UPDATE_PUBLIC_KEY': '',
         })
-        verify_github_app(app, version)
+        verify_universal_app(app, version)
         built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         if built_info.get('TaoScreenDefaultServerURL') != default_server:
             raise SystemExit('构建应用的默认服务器与发布配置不一致')
@@ -419,7 +426,7 @@ def sign_github_dmg(tag, app):
     if not SIGN_IDENTITY or not NOTARY_PROFILE or not re.fullmatch(r'[A-Z0-9]{10}', TEAM_ID):
         raise SystemExit('GitHub 公证需要配置签名身份、Apple Team ID 和公证配置')
     app = pathlib.Path(app).resolve()
-    verify_github_app(app, version)
+    verify_universal_app(app, version)
     package = root / 'dist' / package_name(version, 'universal')
     with tempfile.TemporaryDirectory(prefix='taoscreen-github-signing-') as temporary:
         work = pathlib.Path(temporary)
@@ -437,30 +444,39 @@ def sign_github_dmg(tag, app):
 
 
 def build(version, notes, arch, plist_path):
-    plist = plistlib.loads(plist_path.read_bytes())
-    plist['CFBundleShortVersionString'] = version
-    plist['CFBundleVersion'] = build_number(version)
-    plist_path.write_bytes(plistlib.dumps(plist, sort_keys=False))
     info = release_info(plist_path)
+    info['CFBundleShortVersionString'] = version
+    info['CFBundleVersion'] = build_number(version)
     info['SUFeedURL'] = f'{RELEASE_ORIGIN}/taoscreen-appcast-{arch}.xml'
     info['TaoScreenDefaultServerURL'] = UPDATE_SERVER
-    subprocess.run(['bash', str(root / 'scripts/build-app.sh'), 'Release'], check=True,
-                   env={**os.environ, 'TAOSCREEN_SIGN_IDENTITY': SIGN_IDENTITY, 'TAOSCREEN_BUNDLE_ID': BUNDLE_ID,
-                        'TAOSCREEN_DEFAULT_SERVER_URL': UPDATE_SERVER,
-                        'TAOSCREEN_UPDATE_FEED_URL': info['SUFeedURL'], 'TAOSCREEN_UPDATE_PUBLIC_KEY': info['SUPublicEDKey']})
     app = root / 'dist/TaoScreen.app'
-    subprocess.run(['codesign', '--verify', '--deep', '--strict', '-R',
-                    publisher_requirement(BUNDLE_ID), str(app)], check=True)
-    built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
-    if any(built_info.get(key) != info[key] for key in ('CFBundleShortVersionString', 'CFBundleVersion', 'SUPublicEDKey', 'SUFeedURL', 'TaoScreenDefaultServerURL')):
-        raise SystemExit('构建应用的版本、默认服务器或 Sparkle 配置不匹配，已停止打包')
     package = output / 'macos' / version / package_name(version, arch)
-    package.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='taoscreen-release-') as work:
+    output.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.taoscreen-release-', dir=output) as work:
         work = pathlib.Path(work)
-        notarize_app(app, work / 'TaoScreen.zip')
-        # 装订票据后的应用直接归档；Sparkle 下载 ZIP，无需挂载磁盘镜像。
-        update_archive = output / 'macos' / version / package_name(version, arch, 'zip')
+        build_plist = work / 'Info.plist'
+        build_plist.write_bytes(plistlib.dumps(info, sort_keys=False))
+        subprocess.run(['bash', str(root / 'scripts/build-app.sh'), 'Release'], check=True, env={
+            **os.environ,
+            'TAOSCREEN_BUILD_INFO_PLIST': str(build_plist),
+            'TAOSCREEN_BUILD_UNIVERSAL': '1' if arch == 'universal' else '0',
+            'TAOSCREEN_SIGN_IDENTITY': SIGN_IDENTITY,
+            'TAOSCREEN_BUNDLE_ID': BUNDLE_ID,
+            'TAOSCREEN_DEFAULT_SERVER_URL': UPDATE_SERVER,
+            'TAOSCREEN_UPDATE_FEED_URL': info['SUFeedURL'],
+            'TAOSCREEN_UPDATE_PUBLIC_KEY': info['SUPublicEDKey'],
+        })
+        if arch == 'universal':
+            verify_universal_app(app, version)
+        subprocess.run(['codesign', '--verify', '--deep', '--strict', '-R',
+                        publisher_requirement(BUNDLE_ID), str(app)], check=True)
+        built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        if any(built_info.get(key) != info[key] for key in ('CFBundleShortVersionString', 'CFBundleVersion',
+                                                         'SUPublicEDKey', 'SUFeedURL', 'TaoScreenDefaultServerURL')):
+            raise SystemExit('构建应用的版本、默认服务器或 Sparkle 配置不匹配，已停止打包')
+        notarize_app(app, work / 'notarization.zip')
+        # Sparkle 使用已装订公证票据的 App ZIP。
+        update_archive = work / package_name(version, arch, 'zip')
         subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(update_archive)], check=True)
         signature = subprocess.check_output([sparkle_tool('sign_update'), '--account', UPDATE_KEY_ACCOUNT,
                                              '-p', str(update_archive)], text=True).strip()
@@ -470,13 +486,18 @@ def build(version, notes, arch, plist_path):
         disk_image = work / package.name
         create_disk_image(app, disk_image, version)
         notarize_disk_image(disk_image)
-        shutil.move(disk_image, package)
-    manifest = dict(version=version, platform='macos', arch=arch,
-                    url=f'{RELEASE_ORIGIN}/macos/{version}/{package.name}',
-                    sha256=hashlib.sha256(package.read_bytes()).hexdigest(),
-                    size=package.stat().st_size, notes=notes)
-    (output / f'taoscreen-macos-{arch}.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
-    (output / f'taoscreen-appcast-{arch}.xml').write_bytes(feed)
+        manifest = dict(version=version, platform='macos', arch=arch,
+                        url=f'{RELEASE_ORIGIN}/macos/{version}/{package.name}',
+                        sha256=hashlib.sha256(disk_image.read_bytes()).hexdigest(),
+                        size=disk_image.stat().st_size, notes=notes)
+        manifests = (work / f'taoscreen-macos-{arch}.json', work / f'taoscreen-appcast-{arch}.xml')
+        manifests[0].write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
+        manifests[1].write_bytes(feed)
+        package.parent.mkdir(parents=True, exist_ok=True)
+        for artifact in (disk_image, update_archive):
+            artifact.replace(package.parent / artifact.name)
+        for metadata in manifests:
+            metadata.replace(output / metadata.name)
 
 
 def main():
@@ -488,18 +509,21 @@ def main():
     parser.add_argument('--upload', action='store_true', help='生成后上传 R2；清单生效后用户即可收到更新')
     parser.add_argument('--upload-only', action='store_true', help='不重新构建，上传已生成的本地发布文件')
     parser.add_argument('--init-update-key', action='store_true', help='仅初始化 TaoScreen 独立 Sparkle 密钥，不构建或发布')
+    parser.add_argument('--universal', action='store_true', help='按指定版本在本机构建双架构公证 DMG 和 Sparkle 更新包')
     github = parser.add_mutually_exclusive_group()
     github.add_argument('--github-dmg', metavar='TAG', help='按 vX.Y.Z 构建临时签名的通用 DMG')
     github.add_argument('--github-sign-dmg', nargs=2, metavar=('TAG', 'APP'), help='按 vX.Y.Z 为通用 App 签名并生成公证 DMG')
     args = parser.parse_args()
     if args.github_dmg is not None or args.github_sign_dmg is not None:
-        if args.version or args.notes or args.notes_file or args.upload or args.upload_only or args.init_update_key:
+        if args.version or args.notes or args.notes_file or args.upload or args.upload_only or args.init_update_key or args.universal:
             parser.error('GitHub 打包与正式发布参数不能同时使用')
         if args.github_sign_dmg is not None:
             sign_github_dmg(*args.github_sign_dmg)
         else:
             build_github_dmg(args.github_dmg)
         return
+    if args.universal and (not args.version or args.upload or args.upload_only or args.init_update_key):
+        parser.error('--universal 需要显式版本号，用于本地打包')
     check_config(args)
     if args.init_update_key:
         if args.version or args.notes or args.notes_file or args.upload or args.upload_only:
@@ -520,8 +544,8 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         raise SystemExit('另一项 TaoScreen 打包或发布正在运行，请等待完成')
-    arch = subprocess.check_output(['uname', '-m'], text=True).strip()
-    if arch not in ('arm64', 'x86_64'):
+    arch = 'universal' if args.universal else subprocess.check_output(['uname', '-m'], text=True).strip()
+    if arch not in ('arm64', 'x86_64', 'universal'):
         raise SystemExit('架构不支持')
     plist_path = root / 'Resources/Info.plist'
     args.version = resolve_version(args.version, args.upload_only, arch, plist_path)
@@ -537,7 +561,7 @@ def main():
             raise SystemExit('安装包已存在，禁止覆盖已发布版本，请增加版本号')
         if SIGN_IDENTITY not in subprocess.check_output(['security', 'find-identity', '-v', '-p', 'codesigning'], text=True):
             raise SystemExit(f'钥匙串中没有签名证书：{SIGN_IDENTITY}')
-        if subprocess.run(['xcrun', 'notarytool', 'history', '--keychain-profile', NOTARY_PROFILE],
+        if subprocess.run(notary_command('history'),
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
             raise SystemExit(f'公证配置 {NOTARY_PROFILE} 不可用，请先运行 xcrun notarytool store-credentials {NOTARY_PROFILE}')
         check_update_key(release_info(plist_path))
@@ -548,6 +572,8 @@ def main():
         print(f'发布文件：{output}')
     if args.upload or args.upload_only:
         upload(args.version, arch)
+    elif args.universal:
+        print('通用发布文件已在本机生成。')
     else:
         print('未上传。实测后运行：python3 scripts/package-release.py --upload-only')
 

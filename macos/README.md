@@ -36,7 +36,7 @@ open "dist/TaoScreen.app"
 
 本地服务地址 `http://127.0.0.1:28080`。远端连接仅接受 HTTPS 服务根地址。新应用需要自己的屏幕录制和辅助功能授权。
 
-从源码构建后，在登录页输入自建服务地址。构建时可通过 `TAOSCREEN_DEFAULT_SERVER_URL` 预填地址。源码版使用 `org.taoscreen.development`，应用偏好、支持目录和钥匙串按 Bundle ID 与官方版隔离。fork 可以设置自己的 `TAOSCREEN_BUNDLE_ID`。自定义 OAuth 回调时，客户端的 `TAOSCREEN_OAUTH_CALLBACK_SCHEME` 与服务端的 `DESKTOP_OAUTH_CALLBACK_SCHEME` 填写相同的值，默认均为 `taoscreen`。
+从源码构建后，通过右上角的账号登录设置填写自建服务地址。构建时可通过 `TAOSCREEN_DEFAULT_SERVER_URL` 预填地址。源码版使用 `org.taoscreen.development`，应用偏好、支持目录和钥匙串按 Bundle ID 与官方版隔离。fork 可以设置自己的 `TAOSCREEN_BUNDLE_ID`。自定义 OAuth 回调时，客户端的 `TAOSCREEN_OAUTH_CALLBACK_SCHEME` 与服务端的 `DESKTOP_OAUTH_CALLBACK_SCHEME` 填写相同的值，默认均为 `taoscreen`。
 
 ## 目录
 
@@ -51,7 +51,7 @@ open "dist/TaoScreen.app"
 
 ## 账号登录
 
-选择「账号连接」并填写服务地址。客户端显示服务器启用的登录方式。自托管实例启用本地账号后，使用管理员开通的邮箱和密码登录。Google / GitHub 通过浏览器完成授权，可以在账号菜单主动绑定。本地开发可填写 `http://127.0.0.1:28080`。自托管配置见[服务端登录说明](../server/docs/authentication.md#自托管登录)。
+启动后默认进入「免登录直连」。切换到「账号直连」时，官方客户端默认使用官方服务器。登录页显示当前服务器启用的 Google 和 GitHub 登录按钮，通过浏览器完成授权，也可在账号菜单主动绑定。通过右上角的登录设置可切换到自建服务器。服务器启用邮箱密码登录时，可从登录设置使用管理员开通的账号。本地开发可填写 `http://127.0.0.1:28080`。自托管配置见[服务端登录说明](../server/docs/authentication.md#自托管登录)。
 
 ## 免登录直连
 
@@ -124,6 +124,8 @@ Sparkle 使用 HTTPS appcast 和 Ed25519 公钥验证更新包。源码构建默
 运行 `swift package resolve` 后，使用 `python3 scripts/package-release.py --init-update-key` 初始化更新密钥。私钥由 Sparkle 留在本机钥匙串，公钥默认保存到本地 `.release/update-public.plist`，也可通过 `TAOSCREEN_UPDATE_PUBLIC_KEY_FILE` 指向已有公钥文件。
 
 运行 `scripts/build-release.sh` 生成 ZIP、DMG 和对应架构的 appcast、下载清单。手动部署时先上传安装包，检查下载内容，再发布清单。使用 R2 自动上传时，通过 `scripts/publish-production.sh` 构建并上传，也可以用 `scripts/upload-release.sh` 上传已有产物。自动上传会检查线上版本和签名。
+
+本地验证双架构正式包时，配置相同的签名、服务器和更新源环境变量，再运行 `scripts/build-release.sh 1.0.21 --universal`。产物为一份同时适用于 Apple Silicon 和 Intel 的公证 DMG、Sparkle 签名 ZIP、`taoscreen-appcast-universal.xml` 和 `taoscreen-macos-universal.json`，均保存在 `dist/releases/`。该命令只生成本地产物。
 
 ### GitHub Release 安装包
 

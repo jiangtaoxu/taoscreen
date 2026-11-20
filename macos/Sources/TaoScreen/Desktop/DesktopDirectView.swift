@@ -94,7 +94,8 @@ private struct DesktopDirectContent: View {
                 connectColumn.frame(minWidth: 350, maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .padding(24)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sheet(isPresented: $showPermissions) { DesktopPermissionSettingsView(center: center) }
         .sheet(isPresented: $showTrustedDevices) { DesktopTrustedDevicesView(service: service) }
@@ -107,8 +108,8 @@ private struct DesktopDirectContent: View {
     private var hostColumn: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text("此电脑 · 允许被连接").font(.headline)
+                HStack(spacing: 10) {
+                    columnHeading("此电脑", symbol: "desktopcomputer")
                     Spacer()
                     DesktopPermissionButton(permissions: center.permissions) { showPermissions = true }
                         .controlSize(.small)
@@ -123,38 +124,36 @@ private struct DesktopDirectContent: View {
     }
 
     private var addressCard: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label("本机连接地址", systemImage: "network").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    if let copiedBadge {
-                        Text(copiedBadge).font(.caption).foregroundStyle(.green)
-                    }
-                    Button { service.refreshNetworkInfo() } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("刷新本机网络与 Tailscale 节点")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("本机连接地址", systemImage: "network").font(.subheadline.weight(.semibold))
+                Spacer()
+                if let copiedBadge {
+                    Text(copiedBadge).font(.caption).foregroundStyle(.green)
                 }
-
-                if let ip = service.networkInfo.tailscaleIP {
-                    addressRow(title: "Tailscale IP", value: ip, badge: "已复制 Tailscale IP")
+                Button { service.refreshNetworkInfo() } label: {
+                    Image(systemName: "arrow.clockwise")
                 }
-                if let dns = service.networkInfo.tailscaleDNSName {
-                    addressRow(title: "MagicDNS", value: dns, badge: "已复制 MagicDNS")
-                }
-                if let lan = service.networkInfo.lanAddresses.first {
-                    addressRow(title: "局域网 IP", value: service.networkInfo.lanAddresses.joined(separator: " / "),
-                               copyValue: lan, badge: "已复制局域网 IP")
-                }
-                if service.networkInfo.tailscaleIP == nil && service.networkInfo.tailscaleDNSName == nil && service.networkInfo.lanAddresses.isEmpty {
-                    Text("暂未检测到 Tailscale 或局域网地址，请确认网络或 Tailscale 已连接。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                .buttonStyle(.borderless)
+                .help("刷新本机网络与 Tailscale 节点")
             }
-            .padding(6)
+
+            if let ip = service.networkInfo.tailscaleIP {
+                addressRow(title: "Tailscale IP", value: ip, badge: "已复制 Tailscale IP")
+            }
+            if let dns = service.networkInfo.tailscaleDNSName {
+                addressRow(title: "MagicDNS", value: dns, badge: "已复制 MagicDNS")
+            }
+            if let lan = service.networkInfo.lanAddresses.first {
+                addressRow(title: "局域网 IP", value: service.networkInfo.lanAddresses.joined(separator: " / "),
+                           copyValue: lan, badge: "已复制局域网 IP")
+            }
+            if service.networkInfo.tailscaleIP == nil && service.networkInfo.tailscaleDNSName == nil && service.networkInfo.lanAddresses.isEmpty {
+                Text("暂未检测到 Tailscale 或局域网地址，请确认网络或 Tailscale 已连接。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
+        .desktopWorkspacePanel()
     }
 
     private func addressRow(title: String, value: String, copyValue: String? = nil, badge: String) -> some View {
@@ -167,146 +166,145 @@ private struct DesktopDirectContent: View {
             Spacer(minLength: 4)
             Button("复制") {
                 copyPlain(copyValue ?? value, badge: badge)
-            }.controlSize(.mini)
+            }.controlSize(.small)
         }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(DesktopWorkspaceStyle.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
     }
 
     private var temporaryPasswordCard: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label("临时连接密码", systemImage: "key.fill").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Toggle("允许临时连接", isOn: Binding(
-                        get: { service.receiving },
-                        set: { service.setAutoReceive($0) }
-                    ))
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                    .disabled(service.busy)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("临时连接密码", systemImage: "key.fill").font(.subheadline.weight(.semibold))
+                Spacer()
+                Toggle("允许临时连接", isOn: Binding(
+                    get: { service.receiving },
+                    set: { service.setAutoReceive($0) }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .disabled(service.busy)
+            }
 
-                if service.receiving {
-                    if let temp = service.formattedTemporaryPassword, let raw = service.temporaryPassword {
-                        HStack(alignment: .center, spacing: 12) {
-                            Text(temp)
-                                .font(.system(size: 26, weight: .bold, design: .monospaced))
-                                .textSelection(.enabled)
-                            Spacer()
-                            Button("复制密码") { copyConcealed(raw, badge: "已复制临时密码") }
-                            Button("刷新") { service.refreshTemporaryPassword() }
+            if service.receiving {
+                if let temp = service.formattedTemporaryPassword, let raw = service.temporaryPassword {
+                    HStack(alignment: .center, spacing: 12) {
+                        Text(temp)
+                            .font(.system(size: 26, weight: .bold, design: .monospaced))
+                            .textSelection(.enabled)
+                        Spacer()
+                        Button("复制密码") { copyConcealed(raw, badge: "已复制临时密码") }
+                        Button("刷新") { service.refreshTemporaryPassword() }
+                    }
+                    HStack(spacing: 8) {
+                        if let summary = shareSummaryText {
+                            Button("复制地址与密码") { copyConcealed(summary, badge: "已复制连接信息") }
                         }
-                        HStack(spacing: 8) {
-                            if let summary = shareSummaryText {
-                                Button("复制地址与密码") { copyConcealed(summary, badge: "已复制连接信息") }
-                            }
-                            if service.code != nil || service.directShareURI != nil {
-                                Menu("兼容连接码") {
-                                    if let uri = service.directShareURI {
-                                        Button("复制连接链接") { copyConcealed(uri, badge: "已复制连接链接") }
-                                    }
-                                    if let code = service.code {
-                                        Button("复制完整连接码 (TS1-)") { copyConcealed(code, badge: "已复制完整连接码") }
-                                    }
+                        if service.code != nil || service.directShareURI != nil {
+                            Menu("兼容连接码") {
+                                if let uri = service.directShareURI {
+                                    Button("复制连接链接") { copyConcealed(uri, badge: "已复制连接链接") }
+                                }
+                                if let code = service.code {
+                                    Button("复制完整连接码 (TS1-)") { copyConcealed(code, badge: "已复制完整连接码") }
                                 }
                             }
-                            Spacer()
-                        }.controlSize(.small)
-                        Text("对方连接后仍需在此 Mac 确认共享；端口 \(service.listeningPort ?? DesktopDirectEndpoint.port.rawValue)。")
-                            .font(.caption).foregroundStyle(.secondary)
-                    } else {
-                        Text("正在开启临时连接接收…").font(.caption).foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("开启后自动生成 6 位临时密码并允许附近局域网发现。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-
-                if !center.permissions.snapshot.screenRecording {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                        Text("未授予屏幕录制权限，暂时无法共享屏幕").font(.caption).foregroundStyle(.orange)
+                        }
                         Spacer()
-                        Button("去授权") { showPermissions = true }.controlSize(.mini)
-                    }
+                    }.controlSize(.small)
+                    Text("对方连接后仍需在此 Mac 确认共享；端口 \(service.listeningPort ?? DesktopDirectEndpoint.port.rawValue)。")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("正在开启临时连接接收…").font(.caption).foregroundStyle(.secondary)
+                }
+            } else {
+                Text("开启后自动生成 6 位临时密码并允许附近局域网发现。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            if !center.permissions.snapshot.screenRecording {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("未授予屏幕录制权限，暂时无法共享屏幕").font(.caption).foregroundStyle(.orange)
+                    Spacer()
+                    Button("去授权") { showPermissions = true }.controlSize(.mini)
                 }
             }
-            .padding(6)
         }
+        .desktopWorkspacePanel()
     }
 
     private var unattendedPasswordCard: some View {
         let missing = center.permissions.snapshot.missing(control: service.unattendedPasswordSettings.grant.control)
-        return GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Label("Tailscale 无人值守", systemImage: "lock.shield").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Toggle("固定密码免确认", isOn: Binding(
-                        get: { service.unattendedPasswordSettings.enabled },
-                        set: { enabled in
-                            if enabled && !service.hasUnattendedPassword {
-                                showUnattendedPassword = true
-                            } else {
-                                service.setUnattendedPasswordEnabled(enabled)
-                            }
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Tailscale 无人值守", systemImage: "lock.shield").font(.subheadline.weight(.semibold))
+                Spacer()
+                Toggle("固定密码免确认", isOn: Binding(
+                    get: { service.unattendedPasswordSettings.enabled },
+                    set: { enabled in
+                        if enabled && !service.hasUnattendedPassword {
+                            showUnattendedPassword = true
+                        } else {
+                            service.setUnattendedPasswordEnabled(enabled)
                         }
-                    ))
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-                }
+                    }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+            }
 
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(service.unattendedPasswordListeningPort != nil ? .green : (service.unattendedPasswordSettings.enabled ? .orange : .secondary))
+                    .frame(width: 7, height: 7)
+                Text(service.unattendedPasswordStatus)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if service.hasUnattendedPassword {
+                let grant = service.unattendedPasswordSettings.grant
+                let displayTitle = grant.shareDisplay.virtualPreset?.title ?? "主屏幕"
+                Text("默认权限：\(displayTitle) · \(grant.control ? "允许控制键鼠" : "仅观看") · \(grant.audio ? "共享系统声音" : "不共享声音")")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("仅限 Tailscale 内网：设置固定密码后无需人工点确认，支持锁屏下直连远程 Mac。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            if service.unattendedPasswordSettings.enabled && !missing.isEmpty {
                 HStack(spacing: 6) {
-                    Circle()
-                        .fill(service.unattendedPasswordListeningPort != nil ? .green : (service.unattendedPasswordSettings.enabled ? .orange : .secondary))
-                        .frame(width: 7, height: 7)
-                    Text(service.unattendedPasswordStatus)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if service.hasUnattendedPassword {
-                    let grant = service.unattendedPasswordSettings.grant
-                    let displayTitle = grant.shareDisplay.virtualPreset?.title ?? "主屏幕"
-                    Text("默认权限：\(displayTitle) · \(grant.control ? "允许控制键鼠" : "仅观看") · \(grant.audio ? "共享系统声音" : "不共享声音")")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Text("仅限 Tailscale 内网：设置固定密码后无需人工点确认，支持锁屏下直连远程 Mac。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-
-                if service.unattendedPasswordSettings.enabled && !missing.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                        Text("缺少\(missing.map { $0 == .screenRecording ? "录屏" : "辅助功能" }.joined(separator: "、"))权限，连接将被拒绝")
-                            .font(.caption).foregroundStyle(.orange)
-                        Spacer()
-                        Button("立即授权") { showPermissions = true }.controlSize(.mini)
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    Button(service.hasUnattendedPassword ? "管理固定密码与权限…" : "设置固定密码…") {
-                        showUnattendedPassword = true
-                    }
-                    Button("可信设备 (\(service.trustedDevices.count))…") {
-                        showTrustedDevices = true
-                    }
-                }.controlSize(.small)
-
-                if service.unattendedEnabled {
-                    Text("已配对可信设备：\(service.unattendedStatus)")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text("缺少\(missing.map { $0 == .screenRecording ? "录屏" : "辅助功能" }.joined(separator: "、"))权限，连接将被拒绝")
+                        .font(.caption).foregroundStyle(.orange)
+                    Spacer()
+                    Button("立即授权") { showPermissions = true }.controlSize(.mini)
                 }
             }
-            .padding(6)
+
+            HStack(spacing: 8) {
+                Button(service.hasUnattendedPassword ? "管理固定密码与权限…" : "设置固定密码…") {
+                    showUnattendedPassword = true
+                }
+                Button("可信设备 (\(service.trustedDevices.count))…") {
+                    showTrustedDevices = true
+                }
+            }.controlSize(.small)
+
+            if service.unattendedEnabled {
+                Text("已配对可信设备：\(service.unattendedStatus)")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
+        .desktopWorkspacePanel()
     }
 
     private var connectColumn: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("连接远程电脑").font(.headline)
+                columnHeading("连接远程电脑", symbol: "arrow.up.right.square")
 
                 quickConnectCard
                 tailscalePeersSection
@@ -319,44 +317,55 @@ private struct DesktopDirectContent: View {
     }
 
     private var quickConnectCard: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("快速连接").font(.subheadline.weight(.semibold))
-                TextField("目标地址：Tailscale IP、MagicDNS 或局域网 IP", text: $targetAddress)
-                    .focused($focusedField, equals: .address)
-                    .onSubmit { focusedField = .credential }
+        VStack(alignment: .leading, spacing: 12) {
+            Label("快速连接", systemImage: "bolt.fill").font(.subheadline.weight(.semibold))
+            TextField("目标地址：Tailscale IP、MagicDNS 或局域网 IP", text: $targetAddress)
+                .focused($focusedField, equals: .address)
+                .onSubmit { focusedField = .credential }
 
-                HStack(spacing: 6) {
-                    Group {
-                        if showCredential {
-                            TextField("6 位临时密码、固定密码或连接码", text: $credential)
-                        } else {
-                            SecureField("6 位临时密码、固定密码或连接码", text: $credential)
-                        }
+            HStack(spacing: 6) {
+                Group {
+                    if showCredential {
+                        TextField("6 位临时密码、固定密码或连接码", text: $credential)
+                    } else {
+                        SecureField("6 位临时密码、固定密码或连接码", text: $credential)
                     }
-                    .focused($focusedField, equals: .credential)
-                    .onSubmit(submitQuickConnect)
-
-                    Button { showCredential.toggle() } label: {
-                        Image(systemName: showCredential ? "eye.slash" : "eye")
-                    }
-                    .buttonStyle(.borderless)
-                    .help(showCredential ? "隐藏密码" : "显示密码")
                 }
+                .focused($focusedField, equals: .credential)
+                .onSubmit(submitQuickConnect)
 
-                Text("自动识别 6 位临时密码（端口 \(DesktopDirectEndpoint.port.rawValue)）、8 位以上 Tailscale 固定密码（端口 \(DesktopTailscaleAddress.passwordPort.rawValue)）或兼容连接码。")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack {
-                    Spacer()
-                    Button("连接", action: submitQuickConnect)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(!canSubmitQuickConnect)
+                Button { showCredential.toggle() } label: {
+                    Image(systemName: showCredential ? "eye.slash" : "eye")
                 }
+                .buttonStyle(.borderless)
+                .help(showCredential ? "隐藏密码" : "显示密码")
             }
-            .textFieldStyle(.roundedBorder)
-            .padding(6)
+
+            Text("自动识别 6 位临时密码（端口 \(DesktopDirectEndpoint.port.rawValue)）、8 位以上 Tailscale 固定密码（端口 \(DesktopTailscaleAddress.passwordPort.rawValue)）或兼容连接码。")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Spacer()
+                Button(action: submitQuickConnect) { Label("连接", systemImage: "arrow.right") }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!canSubmitQuickConnect)
+            }
+        }
+        .textFieldStyle(.roundedBorder)
+        .controlSize(.large)
+        .desktopWorkspacePanel(emphasized: true)
+    }
+
+    private func columnHeading(_ title: String, symbol: String) -> some View {
+        Label {
+            Text(title).font(.title3.weight(.semibold))
+        } icon: {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(DesktopWorkspaceStyle.accent)
+                .frame(width: 32, height: 32)
+                .background(DesktopWorkspaceStyle.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
         }
     }
 
@@ -433,10 +442,17 @@ private struct DesktopDirectContent: View {
             }
             if service.nearby.isEmpty {
                 if service.networkInfo.tailscalePeers.isEmpty && connectableTrustedDevices.isEmpty && service.recentPeers.isEmpty {
-                    ContentUnavailableView("暂无自动发现的设备", systemImage: "network",
-                        description: Text("跨网通过 Tailscale 连接时，直接在上方输入对方的 Tailscale IP / MagicDNS 和连接密码即可。"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "network").foregroundStyle(DesktopWorkspaceStyle.accent)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("暂无自动发现的设备").font(.callout.weight(.medium))
+                            Text("通过 Tailscale 跨网连接时，可在上方输入对方的地址和连接密码。")
+                                .font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .desktopWorkspacePanel(padding: 12)
                 } else {
                     Text("同一局域网下打开接收的 Mac 会自动出现在这里。")
                         .font(.caption).foregroundStyle(.secondary)

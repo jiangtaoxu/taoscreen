@@ -23,25 +23,30 @@ struct DesktopOAuthTests {
             }
         }
 
-        account.serverText = "https://official.example.test"
+        try account.selectServer("https://official.example.test")
         await account.loadProviders()
         #expect(account.enabledProviders.map(\.id) == [.github, .google])
         #expect(account.allowsPasswordLogin)
 
-        account.serverText = "https://private.example.test"
+        try account.selectServer("https://private.example.test")
         #expect(account.enabledProviders.isEmpty)
         #expect(!account.allowsPasswordLogin)
         await account.loadProviders()
         #expect(account.enabledProviders.map(\.id) == [.google])
         #expect(!account.allowsPasswordLogin)
 
-        account.serverText = "https://local.example.test"
+        try account.selectServer(" https://LOCAL.example.test/ ")
+        let restored = DesktopAccountState(defaults: defaults)
+        #expect(restored.serverText == "https://local.example.test")
         await account.loadProviders()
         #expect(account.enabledProviders.isEmpty && account.allowsPasswordLogin)
 
-        account.serverText = "https://offline.example.test"
+        #expect(throws: CloudError.self) { try account.selectServer("http://private.example.test") }
+        #expect(account.serverText == "https://local.example.test" && account.allowsPasswordLogin)
+
+        try account.selectServer("https://offline.example.test")
         await account.loadProviders()
-        #expect(account.enabledProviders.isEmpty && !account.providersLoaded)
+        #expect(account.enabledProviders.isEmpty && !account.providersLoaded && account.loginMethodsUnavailable)
     }
 
     @Test func generatesIndependentPKCEAndOnlyAcceptsOwnServerAndProvider() throws {
