@@ -207,6 +207,11 @@ type socialAPI struct {
 
 func integrationSocial(t *testing.T) *socialAPI {
 	t.Helper()
+	return integrationSocialWithSignup(t, true)
+}
+
+func integrationSocialWithSignup(t *testing.T, socialSignup bool) *socialAPI {
+	t.Helper()
 	dbURL := os.Getenv("TAOSCREEN_AUTH_TEST_DATABASE_URL")
 	rcURL := os.Getenv("TAOSCREEN_AUTH_TEST_REDIS_URL")
 	if dbURL == "" || rcURL == "" {
@@ -228,7 +233,7 @@ func integrationSocial(t *testing.T) *socialAPI {
 	}
 	rc := redis.NewClient(opts)
 	t.Cleanup(func() { rc.Close() })
-	s := New(config.Config{Auth: config.Auth{SocialSignup: true, PasswordLogin: true, AdminEmails: map[string]bool{"admin@example.test": true}}, Registration: true}, db, rc)
+	s := New(config.Config{Auth: config.Auth{SocialSignup: socialSignup, PasswordLogin: true, AdminEmails: map[string]bool{"admin@example.test": true}}, Registration: true}, db, rc)
 	// 每个测试使用独立限流来源，保留正式限流实现；不清空任何 Redis 数据。
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.RemoteAddr = "test-" + t.Name() + ":1234"
@@ -398,8 +403,8 @@ func TestSocialDoesNotMergeEmailAndRejectsCSRF(t *testing.T) {
 	second := a.start("github", "", "")
 	a.browser(second)
 	a.callback(second)
-	if status, _ := a.exchange(second, ""); status != 409 {
-		t.Fatal("same email automatically merged")
+	if status, body := a.exchange(second, ""); status != 409 || body["error"].(map[string]any)["code"] != "email_already_registered" {
+		t.Fatal("same email did not report that an account already exists")
 	}
 	pending := a.start("google", "", "")
 	a.browser(pending)
@@ -434,6 +439,74 @@ func TestSocialDoesNotMergeEmailAndRejectsCSRF(t *testing.T) {
 	status, _ := a.request("POST", "/v1/auth/identities/github/start", first["access_token"].(string), map[string]string{"state": f.state, "code_challenge": pkceChallenge(f.verifier), "device_id": uuid.NewString(), "device_name": "wrong device"})
 	if status != 400 {
 		t.Fatal("link device identity not checked")
+	}
+}
+
+func TestSocialExistingPasswordAccountCanBindAfterFirstLogin(t *testing.T) {
+	tests := []struct {
+		name         string
+		socialSignup bool
+		wantStatus   int
+		wantCode     string
+	}{
+		{"signup_enabled", true, http.StatusConflict, "email_already_registered"},
+		{"signup_disabled", false, http.StatusForbidden, "social_signup_disabled"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertPasswordAccountCanBind(t, tt.socialSignup, tt.wantStatus, tt.wantCode)
+		})
+	}
+}
+
+func assertPasswordAccountCanBind(t *testing.T, socialSignup bool, wantStatus int, wantCode string) {
+	t.Helper()
+	a := integrationSocialWithSignup(t, socialSignup)
+	ctx := context.Background()
+	const password = "existing-test-password"
+	user, err := a.s.CreateUser(ctx, a.provider.next.Email, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pending := a.start("google", "", "")
+	a.browser(pending)
+	if failure := a.callback(pending); failure != "" {
+		t.Fatalf("verified Google callback failed: %s", failure)
+	}
+	status, body := a.exchange(pending, "")
+	problem, _ := body["error"].(map[string]any)
+	if status != wantStatus || problem["code"] != wantCode {
+		t.Fatalf("pre-created account returned status %d and code %v, want %d and %s",
+			status, problem["code"], wantStatus, wantCode)
+	}
+	var unused bool
+	err = a.db.QueryRow(ctx, `SELECT last_login_at IS NULL
+		AND NOT EXISTS (SELECT 1 FROM auth_identities WHERE user_id=users.id)
+		AND NOT EXISTS (SELECT 1 FROM devices WHERE user_id=users.id)
+		FROM users WHERE id=$1`, user).Scan(&unused)
+	if err != nil || !unused {
+		t.Fatalf("rejected Google login changed the unused account: %v", err)
+	}
+
+	status, body = a.request("POST", "/v1/auth/login", "", credentials{
+		Email: a.provider.next.Email, Password: password, DeviceID: pending.device, DeviceName: "OAuth integration",
+	})
+	if status != 200 || body["user_id"] != user {
+		t.Fatalf("password login to the original account failed: %d", status)
+	}
+	token := body["access_token"].(string)
+	link := a.start("google", token, pending.device)
+	a.browser(link)
+	if failure := a.callback(link); failure != "" {
+		t.Fatalf("Google link callback failed: %s", failure)
+	}
+	if status, _ := a.exchange(link, token); status != 200 {
+		t.Fatalf("explicit Google link failed: %d", status)
+	}
+	_, signedIn := a.login("google")
+	if signedIn["user_id"] != user {
+		t.Fatal("Google login did not use the existing account")
 	}
 }
 func TestSocialExpiredTransactionsAndRevokedBinding(t *testing.T) {

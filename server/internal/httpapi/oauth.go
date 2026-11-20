@@ -426,7 +426,7 @@ func (s *Server) oauthExchange(w http.ResponseWriter, r *http.Request) error {
 	return jsonReply(w, 200, tokens)
 }
 func socialConflict() error {
-	return problem(409, "identity_conflict", "此邮箱或登录方式已关联其他账号。请先使用原登录方式登录，再主动绑定；不会自动合并账号")
+	return problem(409, "identity_conflict", "此第三方身份无法绑定到当前账号。请检查已绑定的登录方式")
 }
 func (s *Server) bindSocialIdentity(ctx context.Context, tx pgx.Tx, provider string, id socialIdentity, target string) (string, error) {
 	if !id.Verified || id.Subject == "" {
@@ -458,13 +458,13 @@ func (s *Server) bindSocialIdentity(ctx context.Context, tx pgx.Tx, provider str
 			return "", problem(403, "social_signup_disabled", "当前服务未开放第三方新用户注册")
 		}
 		user = uuid.NewString()
-		_, e = tx.Exec(ctx, `INSERT INTO users(id,email,display_name,email_verified,registration_provider) VALUES($1,$2,$3,true,$4)`, user, id.Email, id.Name, provider)
+		tag, e := tx.Exec(ctx, `INSERT INTO users(id,email,display_name,email_verified,registration_provider)
+			VALUES($1,$2,$3,true,$4) ON CONFLICT (email) DO NOTHING`, user, id.Email, id.Name, provider)
 		if e != nil {
-			var pe *pgconn.PgError
-			if errors.As(e, &pe) && pe.Code == "23505" {
-				return "", socialConflict()
-			}
 			return "", e
+		}
+		if tag.RowsAffected() == 0 {
+			return "", problem(409, "email_already_registered", "此邮箱已开通 TaoScreen 账号，可能尚未登录过。请先用原方式登录，再从账号菜单绑定此登录方式")
 		}
 	}
 	_, e = tx.Exec(ctx, `INSERT INTO auth_identities(provider,subject,user_id,email,email_verified,display_name) VALUES($1,$2,$3,$4,true,$5)`, provider, id.Subject, user, id.Email, id.Name)
