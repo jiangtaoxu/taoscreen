@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""显式设置版本、构建 Release，完成 Developer ID 签名和公证后生成 Sparkle ZIP、兼容 DMG 与 R2 发布文件；加 --upload 时上传 R2 并校验线上结果。不提交。"""
+"""构建 TaoScreen 发布产物。正式发布支持签名、公证、Sparkle 与 R2，GitHub Release 可按 tag 单独打包通用 DMG。"""
 import argparse
 import base64
 import hashlib
@@ -328,6 +328,56 @@ def upload(version, arch):
     print(f'已发布 {version}（{arch}），Sparkle 与下载接口均已返回新版本。')
 
 
+def create_disk_image(app, disk_image, version):
+    staging = disk_image.parent / 'staging'
+    staging.mkdir()
+    shutil.copytree(app, staging / 'TaoScreen.app', symlinks=True)
+    (staging / 'Applications').symlink_to('/Applications')
+    subprocess.run(['hdiutil', 'create', '-volname', f'{DISPLAY_NAME} {version}', '-srcfolder', str(staging),
+                    '-format', 'UDZO', str(disk_image)], check=True)
+
+
+def build_github_dmg(tag):
+    version = tag.removeprefix('v')
+    if not tag.startswith('v') or not VERSION_PATTERN.fullmatch(version):
+        raise SystemExit('GitHub 发布 tag 必须为 vX.Y.Z，每段为不带前导零的 0–9999')
+
+    app = root / 'dist/TaoScreen.app'
+    package = app.parent / package_name(version, 'universal')
+    with tempfile.TemporaryDirectory(prefix='taoscreen-github-release-') as work:
+        work = pathlib.Path(work)
+        plist_path = work / 'Info.plist'
+        info = plistlib.loads((root / 'Resources/Info.plist').read_bytes())
+        info['CFBundleShortVersionString'] = version
+        info['CFBundleVersion'] = build_number(version)
+        plist_path.write_bytes(plistlib.dumps(info, sort_keys=False))
+
+        subprocess.run(['bash', str(root / 'scripts/build-app.sh'), 'Release'], check=True, env={
+            **os.environ,
+            'TAOSCREEN_BUILD_UNIVERSAL': '1',
+            'TAOSCREEN_BUILD_INFO_PLIST': str(plist_path),
+            'TAOSCREEN_SIGN_IDENTITY': '',
+            'TAOSCREEN_APP_ENTITLEMENTS': '',
+            'TAOSCREEN_PROVISIONING_PROFILE': '',
+            'TAOSCREEN_BUNDLE_ID': '',
+            'TAOSCREEN_OAUTH_CALLBACK_SCHEME': '',
+            'TAOSCREEN_DEFAULT_SERVER_URL': '',
+            'TAOSCREEN_UPDATE_FEED_URL': '',
+            'TAOSCREEN_UPDATE_PUBLIC_KEY': '',
+        })
+        built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        if any(built_info.get(key) != info[key] for key in ('CFBundleShortVersionString', 'CFBundleVersion')):
+            raise SystemExit('构建应用的版本与 GitHub tag 不一致，已停止打包')
+        architectures = subprocess.check_output(['lipo', '-archs', str(app / 'Contents/MacOS/TaoScreen')], text=True)
+        if set(architectures.split()) != {'arm64', 'x86_64'}:
+            raise SystemExit('构建应用缺少 Apple Silicon 或 Intel 架构，已停止打包')
+
+        disk_image = work / package.name
+        create_disk_image(app, disk_image, version)
+        shutil.move(disk_image, package)
+    print(f'已生成：{package}')
+
+
 def build(version, notes, arch, plist_path):
     plist = plistlib.loads(plist_path.read_bytes())
     plist['CFBundleShortVersionString'] = version
@@ -362,13 +412,8 @@ def build(version, notes, arch, plist_path):
         feed = appcast_data(version, arch, notes, update_archive.stat().st_size, signature)
         verify_appcast(feed, version, arch, update_archive, info)
         # DMG 用于手动安装。
-        staging = work / 'staging'
-        staging.mkdir()
-        shutil.copytree(app, staging / 'TaoScreen.app', symlinks=True)
-        (staging / 'Applications').symlink_to('/Applications')
         disk_image = work / package.name
-        subprocess.run(['hdiutil', 'create', '-volname', f'{DISPLAY_NAME} {version}', '-srcfolder', str(staging),
-                        '-format', 'UDZO', str(disk_image)], check=True)
+        create_disk_image(app, disk_image, version)
         subprocess.run(['codesign', '--force', '--sign', SIGN_IDENTITY, '--timestamp', str(disk_image)], check=True)
         notarize(disk_image, disk_image)
         subprocess.run(['spctl', '--assess', '--type', 'open', '--context', 'context:primary-signature', '-vv', str(disk_image)], check=True)
@@ -390,7 +435,13 @@ def main():
     parser.add_argument('--upload', action='store_true', help='生成后上传 R2；清单生效后用户即可收到更新')
     parser.add_argument('--upload-only', action='store_true', help='不重新构建，上传已生成的本地发布文件')
     parser.add_argument('--init-update-key', action='store_true', help='仅初始化 TaoScreen 独立 Sparkle 密钥，不构建或发布')
+    parser.add_argument('--github-dmg', metavar='TAG', help='按 vX.Y.Z 生成 GitHub Release 通用 DMG，仅做临时签名')
     args = parser.parse_args()
+    if args.github_dmg is not None:
+        if args.version or args.notes or args.notes_file or args.upload or args.upload_only or args.init_update_key:
+            parser.error('--github-dmg 不能与正式发布参数同时使用')
+        build_github_dmg(args.github_dmg)
+        return
     check_config(args)
     if args.init_update_key:
         if args.version or args.notes or args.notes_file or args.upload or args.upload_only:

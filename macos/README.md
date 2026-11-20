@@ -125,6 +125,12 @@ Sparkle 使用 HTTPS appcast 和 Ed25519 公钥验证更新包。源码构建默
 
 运行 `scripts/build-release.sh` 生成 ZIP、DMG 和对应架构的 appcast、下载清单。手动部署时先上传安装包，检查下载内容，再发布清单。使用 R2 自动上传时，通过 `scripts/publish-production.sh` 构建并上传，也可以用 `scripts/upload-release.sh` 上传已有产物。自动上传会检查线上版本和签名。
 
+### GitHub Release 安装包
+
+推送 `vX.Y.Z` 格式的 Git tag 后，[GitHub Actions](../.github/workflows/macos-release.yml) 会构建 `TaoScreen-X.Y.Z-universal.dmg`，并上传到同一 tag 的 GitHub Release。一个 DMG 同时支持 Apple Silicon 和 Intel。这个安装包使用临时签名，未经过 Apple 公证，也不包含预设服务器或 Sparkle 更新源。macOS 首次打开时可能拦截。
+
+在本机可运行 `python3 scripts/package-release.py --github-dmg v1.0.20` 从当前检出的源码生成同名 DMG，产物位于 `dist/`。
+
 ## 远程 Mac 操作
 
 1.0.10 修复接收端覆盖系统生成的功能键/方向键标志的问题，并为顶部组合键发送完整的修饰键按下和释放事件。普通字母键的全屏组合在 1.0.9 可用，不代表功能键类系统快捷键也正常；被控端必须升级到修复版本。

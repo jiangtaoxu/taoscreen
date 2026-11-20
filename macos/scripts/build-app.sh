@@ -15,11 +15,20 @@ if [ -n "$APP_ENTITLEMENTS$PROVISIONING_PROFILE" ]; then
 fi
 BUILD_ROOT="$ROOT/.build/xcode"
 OUTPUT="$ROOT/dist/TaoScreen.app"
+ARCHS=$(uname -m)
+DESTINATION="platform=macOS,arch=$ARCHS"
+ONLY_ACTIVE_ARCH=YES
+if [ "${TAOSCREEN_BUILD_UNIVERSAL:-}" = 1 ]; then
+    ARCHS="arm64 x86_64"
+    DESTINATION="generic/platform=macOS"
+    ONLY_ACTIVE_ARCH=NO
+fi
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT"
 xcodebuild -quiet -project "$ROOT/TaoScreen.xcodeproj" -scheme TaoScreen \
-    -configuration "$CONFIGURATION" -destination "platform=macOS,arch=$(uname -m)" \
+    -configuration "$CONFIGURATION" -destination "$DESTINATION" \
     -derivedDataPath "$BUILD_ROOT" -clonedSourcePackagesDirPath "$ROOT/.build/SourcePackages" \
-    ARCHS="$(uname -m)" ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO \
+    ARCHS="$ARCHS" ONLY_ACTIVE_ARCH="$ONLY_ACTIVE_ARCH" CODE_SIGNING_ALLOWED=NO \
+    INFOPLIST_FILE="${TAOSCREEN_BUILD_INFO_PLIST:-Resources/Info.plist}" \
     PRODUCT_BUNDLE_IDENTIFIER="${TAOSCREEN_BUNDLE_ID:-org.taoscreen.development}" \
     TAOSCREEN_OAUTH_CALLBACK_SCHEME="${TAOSCREEN_OAUTH_CALLBACK_SCHEME:-taoscreen}" \
     TAOSCREEN_DEFAULT_SERVER_URL="${TAOSCREEN_DEFAULT_SERVER_URL:-}" \
