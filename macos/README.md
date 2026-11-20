@@ -127,7 +127,9 @@ Sparkle 使用 HTTPS appcast 和 Ed25519 公钥验证更新包。源码构建默
 
 ### GitHub Release 安装包
 
-推送 `vX.Y.Z` 格式的 Git tag 后，[GitHub Actions](../.github/workflows/macos-release.yml) 会构建 `TaoScreen-X.Y.Z-universal.dmg`，并上传到同一 tag 的 GitHub Release。一个 DMG 同时支持 Apple Silicon 和 Intel。这个安装包使用临时签名，未经过 Apple 公证，也不包含预设服务器或 Sparkle 更新源。macOS 首次打开时可能拦截。
+先推送包含工作流的分支，再单独推送 `vX.Y.Z` 格式的 Git tag。[GitHub Actions](../.github/workflows/macos-release.yml) 会构建 `TaoScreen-X.Y.Z-universal.dmg`，并上传到同一 tag 的 GitHub Release。也可在 Actions 页手动运行「发布 macOS DMG」，并指定已经推送的 tag。
+
+一个 DMG 同时支持 Apple Silicon 和 Intel。这个安装包使用临时签名，未经过 Apple 公证，也不包含预设服务器或 Sparkle 更新源。macOS 首次打开时可能拦截。
 
 在本机可运行 `python3 scripts/package-release.py --github-dmg v1.0.20` 从当前检出的源码生成同名 DMG，产物位于 `dist/`。
 
