@@ -1016,7 +1016,7 @@ final class DesktopDirectService: ObservableObject {
             let keys = Set(trustedDevices.filter { $0.canRequest && $0.grant != nil }.map(\.publicKey))
             let parameters = DesktopDirectIdentity.trustedParameters(identity: identity.identity) { keys.contains($0) }
             parameters.requiredLocalEndpoint = .hostPort(host: host, port: trustedPort)
-            let listener = try NWListener(using: parameters, on: trustedPort)
+            let listener = try NWListener(using: parameters)
             trustedListener = listener; trustedListenerReady = false; trustedHost = host
             listener.stateUpdateHandler = { [weak self, weak listener] state in
                 Task { @MainActor [weak self, weak listener] in
@@ -1191,7 +1191,7 @@ final class DesktopDirectService: ObservableObject {
             let identity = try DesktopDirectIdentity()
             let parameters = DesktopDirectIdentity.parameters(identity: identity.identity)
             parameters.requiredLocalEndpoint = .hostPort(host: host, port: passwordPort)
-            let listener = try NWListener(using: parameters, on: passwordPort)
+            let listener = try NWListener(using: parameters)
             passwordListener = listener; passwordListenerReady = false; passwordIdentity = identity; passwordHost = host
             listener.stateUpdateHandler = { [weak self, weak listener] state in
                 Task { @MainActor [weak self, weak listener] in
