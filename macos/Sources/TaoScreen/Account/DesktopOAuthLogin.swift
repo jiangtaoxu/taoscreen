@@ -23,7 +23,7 @@ struct DesktopOAuthLogin {
     private static func randomSecret() throws -> String {
         var bytes = [UInt8](repeating: 0, count: 32)
         guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-            throw CloudError("无法生成安全登录请求，请重试。")
+            throw CloudError(L10n.text("无法生成安全登录请求，请重试。"))
         }
         return base64URL(Data(bytes))
     }
@@ -44,7 +44,7 @@ struct DesktopOAuthLogin {
               c.path == "/v1/auth/oauth/\(provider.rawValue)/authorize",
               let items = c.queryItems, items.count == 1, items[0].name == "ticket",
               let ticket = items[0].value, Self.validSecret(ticket) else {
-            throw CloudError("服务端返回的登录地址无效。")
+            throw CloudError(L10n.text("服务端返回的登录地址无效。"))
         }
         return url
     }
@@ -61,17 +61,17 @@ struct DesktopOAuthLogin {
     }
     func code(from url: URL) throws -> String {
         guard matchesCallback(url), let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else {
-            throw CloudError("登录回调与本次请求不匹配，请重新登录。")
+            throw CloudError(L10n.text("登录回调与本次请求不匹配，请重新登录。"))
         }
         if let error = items.first(where: { $0.name == "error" })?.value {
-            guard !items.contains(where: { $0.name == "code" }) else { throw CloudError("登录回调无效。") }
+            guard !items.contains(where: { $0.name == "code" }) else { throw CloudError(L10n.text("登录回调无效。")) }
             if error == "account_denied" {
-                throw CloudError("此身份未获授权、邮箱未验证或与已有 TaoScreen 账户绑定不符，请联系管理员。")
+                throw CloudError(L10n.text("此身份未获授权、邮箱未验证或与已有 TaoScreen 账户绑定不符，请联系管理员。"))
             }
-            throw CloudError("第三方登录未完成授权，请重新登录。")
+            throw CloudError(L10n.text("第三方登录未完成授权，请重新登录。"))
         }
         guard let code = items.first(where: { $0.name == "code" })?.value, Self.validSecret(code) else {
-            throw CloudError("登录回调缺少有效授权码。")
+            throw CloudError(L10n.text("登录回调缺少有效授权码。"))
         }
         return code
     }
@@ -124,7 +124,7 @@ final class DesktopOAuthBrowser {
     }
 
     func authenticate(_ url: URL, login: DesktopOAuthLogin) async throws -> URL {
-        guard continuation == nil else { throw CloudError("已有登录正在进行。") }
+        guard continuation == nil else { throw CloudError(L10n.text("已有登录正在进行。")) }
         try Task.checkCancellation()
         let requestID = UUID()
         self.requestID = requestID
@@ -134,7 +134,7 @@ final class DesktopOAuthBrowser {
                 timeout = Task { [weak self, timeoutDuration] in
                     do { try await Task.sleep(for: timeoutDuration) } catch { return }
                     guard self?.requestID == requestID else { return }
-                    self?.finish(.failure(CloudError("登录已超时，请重新登录。")))
+                    self?.finish(.failure(CloudError(L10n.text("登录已超时，请重新登录。"))))
                 }
                 let session = makeSession(url) { [weak self] callback, error in
                     guard let self, self.requestID == requestID else { return }
@@ -144,12 +144,12 @@ final class DesktopOAuthBrowser {
                            nsError.code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
                             self.finish(.failure(CancellationError()))
                         } else {
-                            self.finish(.failure(CloudError("浏览器登录未完成：\(error.localizedDescription)")))
+                            self.finish(.failure(CloudError(L10n.text("浏览器登录未完成：\(error.localizedDescription)"))))
                         }
                         return
                     }
                     guard let callback else {
-                        self.finish(.failure(CloudError("浏览器未返回登录回调，请重新登录。")))
+                        self.finish(.failure(CloudError(L10n.text("浏览器未返回登录回调，请重新登录。"))))
                         return
                     }
                     do {
@@ -159,7 +159,7 @@ final class DesktopOAuthBrowser {
                 }
                 self.session = session
                 guard session.start() else {
-                    finish(.failure(CloudError("无法启动浏览器认证会话，请在 TaoScreen 主窗口中重试。")))
+                    finish(.failure(CloudError(L10n.text("无法启动浏览器认证会话，请在 TaoScreen 主窗口中重试。"))))
                     return
                 }
             }

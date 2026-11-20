@@ -1,5 +1,7 @@
 # TaoScreen macOS
 
+简体中文 · [English](README.en.md)
+
 [返回项目首页](../README.md) · [完整使用指南](../docs/user-guide.md) · [服务端说明](../server/README.md)
 
 <img src="Resources/Brand/TaoScreen-logo.png" alt="TaoScreen 双屏互联 Logo" width="128">
@@ -48,6 +50,10 @@ open "dist/TaoScreen.app"
 - `Resources`、`project.yml`、`scripts`：应用元数据、XcodeGen 工程定义和打包。
 
 普通文件接收到 `下载/TaoScreen`；按位置拖放先写入独立应用管理目录。关闭主窗口后保留菜单栏服务，可在菜单栏停止共享或退出。启动后远程桌面开关默认关闭。
+
+## 界面语言
+
+应用默认使用 macOS 首选语言列表中的第一种受支持语言，支持简体中文和英文。主窗口右上角的地球图标可以手动切换，确认重启后生效。英文文案见 [English.json](Sources/TaoScreen/Resources/English.json)，维护翻译时保留编号占位符。
 
 ## 账号登录
 

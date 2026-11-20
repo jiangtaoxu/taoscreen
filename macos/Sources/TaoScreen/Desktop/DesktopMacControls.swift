@@ -7,12 +7,12 @@ enum DesktopMacControl: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .allWindows: "所有窗口"
-        case .dock: "显示 Dock"
-        case .appWindows: "当前应用窗口"
-        case .desktop: "显示桌面"
-        case .fullScreen: "切换全屏"
-        case .escape: "退出当前界面（Esc）"
+        case .allWindows: L10n.text("所有窗口")
+        case .dock: L10n.text("显示 Dock")
+        case .appWindows: L10n.text("当前应用窗口")
+        case .desktop: L10n.text("显示桌面")
+        case .fullScreen: L10n.text("切换全屏")
+        case .escape: L10n.text("退出当前界面（Esc）")
         }
     }
     var symbol: String {
@@ -64,7 +64,7 @@ struct DesktopMacControls: View {
             ForEach([DesktopMacControl.allWindows, .dock]) { action in
                 Button { perform(action) } label: {
                     Image(systemName: action.symbol).frame(width: 28, height: 28)
-                }.help("被控 Mac：\(action.title)（\(action.shortcut.title)）")
+                }.help(L10n.text("被控 Mac：\(action.title)（\(action.shortcut.title)）"))
                     .accessibilityLabel(action.title)
             }
             Menu {
@@ -72,9 +72,9 @@ struct DesktopMacControls: View {
                     Button { perform(action) } label: { Label(action.title + " · " + action.shortcut.title, systemImage: action.symbol) }
                 }
                 Divider()
-                Text("操作被控 Mac；使用该 Mac 的标准快捷键。自定义或关闭系统快捷键后需在该 Mac 恢复。")
+                Text(L10n.text("操作被控 Mac；使用该 Mac 的标准快捷键。自定义或关闭系统快捷键后需在该 Mac 恢复。"))
             } label: { Image(systemName: "ellipsis.circle").frame(width: 28, height: 28) }
-                .help("被控 Mac 操作").accessibilityLabel("更多 Mac 操作")
+                .help(L10n.text("被控 Mac 操作")).accessibilityLabel(L10n.text("更多 Mac 操作"))
         }.buttonStyle(.plain).disabled(!center.canPerformMacControl)
     }
     private func perform(_ action: DesktopMacControl) {

@@ -103,7 +103,7 @@ final class DesktopRTC: NSObject {
         config.sdpSemantics = .unifiedPlan
         config.iceServers = configuration.iceServers.map { RTCIceServer(urlStrings: $0.urls, username: $0.username, credential: $0.credential) }
         config.continualGatheringPolicy = .gatherContinually
-        guard let peer = Self.factory.peerConnection(with: config, constraints: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil), delegate: self) else { throw CloudError("无法初始化远程桌面引擎。") }
+        guard let peer = Self.factory.peerConnection(with: config, constraints: RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil), delegate: self) else { throw CloudError(L10n.text("无法初始化远程桌面引擎。")) }
         connection = peer
         if purpose == .desktop {
             let transceiver = RTCRtpTransceiverInit()
@@ -139,7 +139,7 @@ final class DesktopRTC: NSObject {
             let callback: @Sendable (RTCSessionDescription?, Error?) -> Void = { value, error in
                 if let error { continuation.resume(throwing: error) }
                 else if let value { continuation.resume(returning: value) }
-                else { continuation.resume(throwing: CloudError("无法协商桌面连接。")) }
+                else { continuation.resume(throwing: CloudError(L10n.text("无法协商桌面连接。"))) }
             }
             if offer { connection.offer(for: constraints, completionHandler: callback) }
             else { connection.answer(for: constraints, completionHandler: callback) }
@@ -157,7 +157,7 @@ final class DesktopRTC: NSObject {
 
     func setVideoPreset(_ preset: DesktopVideoPreset) throws {
         guard !closed, let videoSender, !videoSender.parameters.encodings.isEmpty else {
-            throw CloudError("视频编码尚未就绪。")
+            throw CloudError(L10n.text("视频编码尚未就绪。"))
         }
         // Apply after SDP has associated the answerer's sender with its m-line.
         let parameters = videoSender.parameters
@@ -169,7 +169,7 @@ final class DesktopRTC: NSObject {
         }
         videoSender.parameters = parameters
         // 原生 setter 不返回错误，读取实际参数确认，不能仅按本地变量报告成功。
-        guard hasVideoConfiguration(preset) else { throw CloudError("视频编码器未接受所选画面参数。") }
+        guard hasVideoConfiguration(preset) else { throw CloudError(L10n.text("视频编码器未接受所选画面参数。")) }
         // Let congestion control lower the bitrate; a minimum would overwhelm slow links.
         connection.setBweMinBitrateBps(nil, currentBitrateBps: NSNumber(value: preset.initialBitrate),
                                       maxBitrateBps: NSNumber(value: preset.maximumBitrate))
@@ -190,9 +190,9 @@ final class DesktopRTC: NSObject {
         preset == .smooth ? .maintainFramerate : .maintainResolution
     }
     func setRemote(_ sdp: String, offer: Bool) async throws {
-        guard !closed, sdp.utf8.count <= 60*1024 else { throw CloudError("桌面连接参数无效。") }
+        guard !closed, sdp.utf8.count <= 60*1024 else { throw CloudError(L10n.text("桌面连接参数无效。")) }
         if purpose == .ports, sdp.split(whereSeparator: \.isNewline).contains(where: { $0.hasPrefix("m=video ") || $0.hasPrefix("m=audio ") }) {
-            throw CloudError("独立端口连接不接受屏幕或声音轨道。")
+            throw CloudError(L10n.text("独立端口连接不接受屏幕或声音轨道。"))
         }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.setRemoteDescription(RTCSessionDescription(type: offer ? .offer : .answer, sdp: sdp)) { error in
@@ -408,7 +408,7 @@ extension DesktopRTC: RTCPeerConnectionDelegate, RTCDataChannelDelegate {
     }
     nonisolated func peerConnection(_ peerConnection: RTCPeerConnection, didChangeLocalCandidate local: RTCIceCandidate, remoteCandidate remote: RTCIceCandidate, lastReceivedMs: Int32, changeReason: String) {
         let relayed = local.sdp.contains(" typ relay ") || remote.sdp.contains(" typ relay ")
-        Task { @MainActor [weak self] in guard let self, !self.closed else { return }; self.onRoute?(relayed ? "服务器中继" : "设备直连") }
+        Task { @MainActor [weak self] in guard let self, !self.closed else { return }; self.onRoute?(relayed ? L10n.text("服务器中继") : L10n.text("设备直连")) }
     }
     nonisolated func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         if dataChannel.label == "desktop-ports.v1" {

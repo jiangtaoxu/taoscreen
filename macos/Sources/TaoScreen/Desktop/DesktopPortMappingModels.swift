@@ -17,7 +17,7 @@ struct DesktopPortRuleDraft: Identifiable {
     init(rule: DesktopPortRule? = nil, duplicate: Bool = false) {
         id = duplicate ? UUID() : rule?.id ?? UUID()
         editing = rule != nil && !duplicate
-        name = rule.map { duplicate ? String(($0.title + " 副本").prefix(60)) : $0.name } ?? ""
+        name = rule.map { duplicate ? String(($0.title + L10n.text(" 副本")).prefix(60)) : $0.name } ?? ""
         listenPort = duplicate ? "" : rule.map { String($0.listenPort) } ?? ""
         destinationHost = rule?.destinationHost ?? "127.0.0.1"
         destinationPort = rule.map { String($0.destinationPort) } ?? ""
@@ -30,19 +30,19 @@ struct DesktopPortRuleDraft: Identifiable {
         var result: [Field: String] = [:]
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.count > 60 || trimmed.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) {
-            result[.name] = "名称最多 60 个字符，不能包含控制字符"
+            result[.name] = L10n.text("名称最多 60 个字符，不能包含控制字符")
         }
         for (field, text) in [(Field.listenPort, listenPort), (.destinationPort, destinationPort)] {
-            if Self.port(text) == nil { result[field] = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "必填" : "端口范围 1–65535" }
+            if Self.port(text) == nil { result[field] = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? L10n.text("必填") : L10n.text("端口范围 1–65535") }
         }
         if !DesktopPortRule.validHost(destinationHost.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            result[.destinationHost] = "请输入 IP 或主机名，不包含网址、路径或端口"
+            result[.destinationHost] = L10n.text("请输入 IP 或主机名，不包含网址、路径或端口")
         }
         return result
     }
     func makeRule() throws -> DesktopPortRule {
         guard errors.isEmpty, let local = Self.port(listenPort), let remote = Self.port(destinationPort) else {
-            throw CloudError("请检查标红字段。")
+            throw CloudError(L10n.text("请检查标红字段。"))
         }
         return try DesktopPortRule(id: id, name: name, transport: transport, direction: direction,
             listenAddress: listenAddress, listenPort: local, destinationHost: destinationHost,
@@ -63,7 +63,7 @@ struct DesktopPortDeviceStore {
     private var key: String { "taoscreen.ports.devices.\(accountID)" }
     func load() throws -> [DesktopPeer] {
         guard let saved = defaults.object(forKey: key) else { return [] }
-        guard let data = saved as? Data else { throw CloudError("映射设备记录格式无效，未覆盖原记录。") }
+        guard let data = saved as? Data else { throw CloudError(L10n.text("映射设备记录格式无效，未覆盖原记录。")) }
         let peers = try JSONDecoder().decode([DesktopPeer].self, from: data)
         try validate(peers)
         return peers
@@ -75,7 +75,7 @@ struct DesktopPortDeviceStore {
     private func validate(_ peers: [DesktopPeer]) throws {
         guard peers.count <= 512, Set(peers.map(\.id)).count == peers.count,
               peers.allSatisfy({ !$0.name.isEmpty && $0.name.count <= 100 && !$0.name.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) }) else {
-            throw CloudError("映射设备记录无效，未覆盖原记录。")
+            throw CloudError(L10n.text("映射设备记录无效，未覆盖原记录。"))
         }
     }
 }

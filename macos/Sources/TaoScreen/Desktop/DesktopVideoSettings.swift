@@ -5,11 +5,11 @@ enum DesktopVideoPreset: String, Codable, CaseIterable {
 
     var title: String {
         switch self {
-        case .economy: "节省流量 · 720p · 15 帧"
-        case .standard: "标准 · 1080p · 30 帧"
-        case .smooth: "流畅优先 · 1080p · 60 帧"
-        case .high: "高清 · 1440p · 30 帧"
-        case .ultra: "超清 · 4K · 30 帧"
+        case .economy: L10n.text("节省流量 · 720p · 15 帧")
+        case .standard: L10n.text("标准 · 1080p · 30 帧")
+        case .smooth: L10n.text("流畅优先 · 1080p · 60 帧")
+        case .high: L10n.text("高清 · 1440p · 30 帧")
+        case .ultra: L10n.text("超清 · 4K · 30 帧")
         }
     }
 
@@ -52,7 +52,7 @@ struct DesktopVideoFormat: Equatable {
             && width <= preset.maximumLongEdge && height <= preset.maximumLongEdge
             && width * height <= preset.maximumPixels
     }
-    var description: String { "采集 \(width)×\(height) · 帧率上限 \(preset.framesPerSecond) 帧/秒" }
+    var description: String { L10n.text("采集 \(width)×\(height) · 帧率上限 \(preset.framesPerSecond) 帧/秒") }
 }
 
 /// 独立类型防止旧版把画面协商误当作键鼠输入。请求 ID 对应唯一一次应用结果。
@@ -93,10 +93,10 @@ struct DesktopVideoSelection {
 
     var selectedPreset: DesktopVideoPreset { request?.preset ?? confirmed?.preset ?? preference }
     var statusText: String {
-        if !supported { return "对方尚未声明支持画面设置，请确认被控端已升级。" }
-        if changing { return "正在应用画面设置…" }
+        if !supported { return L10n.text("对方尚未声明支持画面设置，请确认被控端已升级。") }
+        if changing { return L10n.text("正在应用画面设置…") }
         if let failure { return failure }
-        return confirmed?.description ?? "画面设置状态未确认。"
+        return confirmed?.description ?? L10n.text("画面设置状态未确认。")
     }
 
     mutating func begin(_ preset: DesktopVideoPreset) -> DesktopVideoMessage? {
@@ -125,13 +125,13 @@ struct DesktopVideoSelection {
     mutating func expire(_ requestID: UUID) {
         guard request?.requestID == requestID else { return }
         changing = false; confirmed = nil
-        failure = "尚未收到画面切换结果，当前设置状态未确认，请重试。"
+        failure = L10n.text("尚未收到画面切换结果，当前设置状态未确认，请重试。")
     }
 
     mutating func sendFailed(_ requestID: UUID) {
         guard request?.requestID == requestID else { return }
         request = nil; changing = false
-        failure = "画面设置未能发送，请检查连接后重试。"
+        failure = L10n.text("画面设置未能发送，请检查连接后重试。")
     }
 }
 
@@ -139,8 +139,8 @@ enum DesktopVideoUpdateFailure: LocalizedError {
     case restored(String), unknown(String)
     var errorDescription: String? {
         switch self {
-        case .restored(let reason): "画面切换失败，已恢复原配置：\(reason)"
-        case .unknown(let reason): "画面切换失败且无法确认原配置，共享已停止：\(reason)"
+        case .restored(let reason): L10n.text("画面切换失败，已恢复原配置：\(reason)")
+        case .unknown(let reason): L10n.text("画面切换失败且无法确认原配置，共享已停止：\(reason)")
         }
     }
 }
@@ -159,7 +159,7 @@ enum DesktopVideoUpdate {
                 try await capture(previous)
                 try encoder(previous)
             } catch {
-                throw DesktopVideoUpdateFailure.unknown("\(reason)；恢复失败：\(error.localizedDescription)")
+                throw DesktopVideoUpdateFailure.unknown(L10n.text("\(reason)；恢复失败：\(error.localizedDescription)"))
             }
             throw DesktopVideoUpdateFailure.restored(reason)
         }

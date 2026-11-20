@@ -18,7 +18,7 @@ enum DesktopPortProtocol: String, Codable, CaseIterable {
 
 enum DesktopPortDirection: String, Codable, CaseIterable {
     case localToRemote, remoteToLocal
-    var title: String { self == .localToRemote ? "本机监听 → 远端目标" : "远端监听 → 本机目标" }
+    var title: String { self == .localToRemote ? L10n.text("本机监听 → 远端目标") : L10n.text("远端监听 → 本机目标") }
     var listenerIsHost: Bool { self == .remoteToLocal }
 }
 
@@ -43,9 +43,9 @@ struct DesktopPortRule: Codable, Equatable, Identifiable {
         self.destinationHost = destinationHost.trimmingCharacters(in: .whitespacesAndNewlines)
         self.destinationPort = destinationPort
         self.isEnabled = isEnabled
-        guard Self.validPort(listenPort), Self.validPort(destinationPort) else { throw CloudError("端口必须是 1–65535 之间的整数。") }
-        guard Self.validHost(self.destinationHost) else { throw CloudError("目标地址需填写 IP 或主机名，不能包含网址、路径或端口。") }
-        guard isValid else { throw CloudError("监听地址或规则名称无效；名称最多 60 个字符。") }
+        guard Self.validPort(listenPort), Self.validPort(destinationPort) else { throw CloudError(L10n.text("端口必须是 1–65535 之间的整数。")) }
+        guard Self.validHost(self.destinationHost) else { throw CloudError(L10n.text("目标地址需填写 IP 或主机名，不能包含网址、路径或端口。")) }
+        guard isValid else { throw CloudError(L10n.text("监听地址或规则名称无效；名称最多 60 个字符。")) }
     }
     private enum CodingKeys: String, CodingKey {
         case id, name, transport, direction, listenAddress, listenPort, destinationHost, destinationPort, isEnabled
@@ -95,12 +95,12 @@ struct DesktopPortRuleStore {
     private var key: String { "taoscreen.desktop.port-forward.\(accountID).\(peerID.uuidString)" }
     func load() throws -> [DesktopPortRule] {
         guard let saved = defaults.object(forKey: key) else { return [] }
-        guard let data = saved as? Data else { throw CloudError("已保存的端口规则格式无效，未覆盖原记录。") }
+        guard let data = saved as? Data else { throw CloudError(L10n.text("已保存的端口规则格式无效，未覆盖原记录。")) }
         do {
             let rules = try JSONDecoder().decode([DesktopPortRule].self, from: data)
             try validate(rules)
             return rules
-        } catch { throw CloudError("已保存的端口规则无法读取，未覆盖原记录：\(error.localizedDescription)") }
+        } catch { throw CloudError(L10n.text("已保存的端口规则无法读取，未覆盖原记录：\(error.localizedDescription)")) }
     }
     func save(_ rules: [DesktopPortRule]) throws {
         try validate(rules)
@@ -110,7 +110,7 @@ struct DesktopPortRuleStore {
         guard rules.count <= DesktopPortLimits.rules, rules.allSatisfy(\.isValid),
               Set(rules.map(\.id)).count == rules.count,
               !rules.indices.contains(where: { i in rules.indices.contains { j in i < j && rules[i].conflicts(with: rules[j]) } }) else {
-            throw CloudError("端口规则数量、地址或端口记录无效。")
+            throw CloudError(L10n.text("端口规则数量、地址或端口记录无效。"))
         }
     }
 }
@@ -155,15 +155,15 @@ struct DesktopPortPacket: Codable, Equatable {
         }
     }
     func encoded() throws -> Data {
-        guard isValid else { throw CloudError("端口转发消息无效。") }
+        guard isValid else { throw CloudError(L10n.text("端口转发消息无效。")) }
         let data = try JSONEncoder().encode(self)
-        guard data.count <= DesktopPortLimits.packet else { throw CloudError("端口转发消息过大。") }
+        guard data.count <= DesktopPortLimits.packet else { throw CloudError(L10n.text("端口转发消息过大。")) }
         return data
     }
     static func decode(_ data: Data) throws -> Self {
-        guard data.count <= DesktopPortLimits.packet else { throw CloudError("端口转发消息过大。") }
+        guard data.count <= DesktopPortLimits.packet else { throw CloudError(L10n.text("端口转发消息过大。")) }
         let value = try JSONDecoder().decode(Self.self, from: data)
-        guard value.isValid else { throw CloudError("端口转发消息无效。") }
+        guard value.isValid else { throw CloudError(L10n.text("端口转发消息无效。")) }
         return value
     }
     static func datagrams(id: UUID, data: Data) -> [Self] {
@@ -184,13 +184,13 @@ struct DesktopPortDatagramAssembly {
     private var data = Data()
     private(set) var deadline: TimeInterval?
     mutating func append(_ packet: DesktopPortPacket, now: TimeInterval) throws -> Data? {
-        guard packet.kind == .datagram, packet.isValid else { throw CloudError("UDP 数据报片段无效。") }
+        guard packet.kind == .datagram, packet.isValid else { throw CloudError(L10n.text("UDP 数据报片段无效。")) }
         if id == nil {
-            guard packet.part == 0 else { throw CloudError("UDP 数据报缺少起始片段。") }
+            guard packet.part == 0 else { throw CloudError(L10n.text("UDP 数据报缺少起始片段。")) }
             id = packet.datagramID; length = packet.length!; parts = packet.parts!; deadline = now + 10
         }
         guard now <= deadline!, packet.datagramID == id, packet.part == nextPart,
-              packet.length == length, packet.parts == parts else { throw CloudError("UDP 数据报片段不连续或已超时。") }
+              packet.length == length, packet.parts == parts else { throw CloudError(L10n.text("UDP 数据报片段不连续或已超时。")) }
         data.append(packet.payload!); nextPart += 1
         guard nextPart == parts else { return nil }
         let result = data

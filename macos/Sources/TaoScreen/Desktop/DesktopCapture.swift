@@ -79,10 +79,10 @@ final class DesktopCapture: NSObject, SCStreamOutput, SCStreamDelegate, @uncheck
 
     @MainActor static func contentFilter(displayID: CGDirectDisplayID, excludingWindowIDs: Set<CGWindowID>) async throws -> SCContentFilter {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        guard let display = content.displays.first(where: { $0.displayID == displayID }) else { throw CloudError("所选屏幕已断开。") }
+        guard let display = content.displays.first(where: { $0.displayID == displayID }) else { throw CloudError(L10n.text("所选屏幕已断开。")) }
         let excluded = content.windows.filter { excludingWindowIDs.contains($0.windowID) }
         guard Set(excluded.map(\.windowID)) == excludingWindowIDs else {
-            throw CloudError("无法从远程画面排除隐私屏，共享已停止，请重新连接。")
+            throw CloudError(L10n.text("无法从远程画面排除隐私屏，共享已停止，请重新连接。"))
         }
         return SCContentFilter(display: display, excludingWindows: excluded)
     }

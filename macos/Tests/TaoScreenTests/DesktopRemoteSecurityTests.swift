@@ -152,12 +152,12 @@ struct DesktopRemoteSecurityTests {
         _ = viewer.receive(.init(action: .unlockResult, requestID: UUID(), submitted: true))
         #expect(viewer.unlockRequest == unlock)
         _ = viewer.receive(.init(action: .unlockResult, requestID: unlock, submitted: true))
-        #expect(viewer.unlockRequest == unlock && viewer.unlockMessage?.contains("等待") == true)
+        #expect(viewer.unlockRequest == unlock && viewer.unlockMessage == L10n.text("密码已提交，等待远端确认解锁…"))
         viewer.confirmUnlocked()
-        #expect(viewer.unlockRequest == nil && viewer.unlockMessage == "远端已确认解锁。")
+        #expect(viewer.unlockRequest == nil && viewer.unlockMessage == L10n.text("远端已确认解锁。"))
         let optionalTimeout = viewer.beginUnlock()
         let timeout = try #require(optionalTimeout); viewer.expireUnlock(timeout)
-        #expect(viewer.unlockRequest == nil && viewer.unlockMessage?.contains("不会自动重试") == true)
+        #expect(viewer.unlockRequest == nil && viewer.unlockMessage == L10n.text("未确认远端已解锁，请检查密码和远端密码框；不会自动重试。"))
         var restored = DesktopRemoteSecurityViewer(); restored.preference = true
         let optionalAutomatic = restored.receive(.init(action: .status, lockOnDisconnect: false))
         let automatic = try #require(optionalAutomatic)
@@ -259,12 +259,12 @@ struct DesktopRemoteSecurityTests {
         let optionalID = viewerPolicy.beginUnlock()
         let id = try #require(optionalID)
         #expect(viewer.sendSecurity(.init(action: .unlock, requestID: id, password: password)))
-        while (submitted == 0 || viewerPolicy.unlockMessage?.contains("等待远端确认") != true) && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        while (submitted == 0 || viewerPolicy.unlockMessage != L10n.text("密码已提交，等待远端确认解锁…")) && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
         #expect(submitted == 1 && !events.isEmpty && viewerPolicy.unlockRequest == id)
         #expect(!unexpectedInput && !leakedSignal && !String(reflecting: hostPolicy).contains(password))
         host.sendSessionStatus(.init(locked: false))
         while viewerPolicy.unlockRequest != nil && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
-        #expect(viewerPolicy.unlockMessage == "远端已确认解锁。")
+        #expect(viewerPolicy.unlockMessage == L10n.text("远端已确认解锁。"))
         viewer.close()
         let shouldLock = hostPolicy.end(established: connected, authorized: true, localSession: unlocked)
         #expect(shouldLock && !hostPolicy.lockOnDisconnect)

@@ -43,13 +43,13 @@ enum DesktopRemotePasswordKeychain {
 
     private static func accessControl(_ flags: SecAccessControlCreateFlags) throws -> SecAccessControl {
         guard let control = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, flags, nil)
-        else { throw CloudError("无法设置远程登录密码的本机验证。") }
+        else { throw CloudError(L10n.text("无法设置远程登录密码的本机验证。")) }
         return control
     }
 
     static func read(_ scope: DesktopRemotePasswordScope) async throws -> String? {
         let context = LAContext()
-        context.localizedReason = "验证身份以使用已保存的远程登录密码。"
+        context.localizedReason = L10n.text("验证身份以使用已保存的远程登录密码。")
         context.touchIDAuthenticationAllowableReuseDuration = 0
         return try await withTaskCancellationHandler {
             defer { context.invalidate() }
@@ -70,7 +70,7 @@ enum DesktopRemotePasswordKeychain {
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
         if status == errSecUserCanceled { throw CancellationError() }
-        guard status == errSecSuccess, let stored = item as? Data else { throw failure(status, action: "读取") }
+        guard status == errSecSuccess, let stored = item as? Data else { throw failure(status, action: L10n.text("读取")) }
         let data: Data
         if SecureEnclave.isAvailable {
             do {
@@ -83,13 +83,13 @@ enum DesktopRemotePasswordKeychain {
             } catch let error as LAError where error.code == .userCancel || error.code == .appCancel {
                 throw CancellationError()
             } catch {
-                throw CloudError("本机验证未完成，或已保存的密码无法解密。请重试或重新保存。")
+                throw CloudError(L10n.text("本机验证未完成，或已保存的密码无法解密。请重试或重新保存。"))
             }
         } else {
             data = stored
         }
         guard let password = String(data: data, encoding: .utf8) else {
-            throw CloudError("本机保存的密码格式无效，请重新保存。")
+            throw CloudError(L10n.text("本机保存的密码格式无效，请重新保存。"))
         }
         return password
     }
@@ -104,14 +104,14 @@ enum DesktopRemotePasswordKeychain {
         let status = SecItemCopyMatching(query as CFDictionary, nil)
         if status == errSecItemNotFound { return false }
         guard status == errSecSuccess || status == errSecInteractionNotAllowed else {
-            throw failure(status, action: "检查")
+            throw failure(status, action: L10n.text("检查"))
         }
         return true
     }
 
     static func save(_ scope: DesktopRemotePasswordScope, _ password: String) throws {
         guard DesktopRemoteSecurityMessage.validPassword(password) else {
-            throw CloudError("密码不能为空、超过 1024 字节或包含换行、制表等控制字符。")
+            throw CloudError(L10n.text("密码不能为空、超过 1024 字节或包含换行、制表等控制字符。"))
         }
         let query = query(scope)
         let plain = Data(password.utf8)
@@ -134,7 +134,7 @@ enum DesktopRemotePasswordKeychain {
         if status == errSecDuplicateItem {
             status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: stored] as CFDictionary)
         }
-        guard status == errSecSuccess else { throw failure(status, action: "保存") }
+        guard status == errSecSuccess else { throw failure(status, action: L10n.text("保存")) }
         try remove(item(scope, service: legacyService))
     }
 
@@ -145,14 +145,14 @@ enum DesktopRemotePasswordKeychain {
 
     private static func remove(_ query: [String: Any]) throws {
         let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw failure(status, action: "删除") }
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw failure(status, action: L10n.text("删除")) }
     }
 
     private static func failure(_ status: OSStatus, action: String) -> CloudError {
         if status == errSecMissingEntitlement {
-            return CloudError("此构建缺少受保护钥匙串权限。请使用已配置钥匙串权限的签名版本，或在远端手动输入密码。")
+            return CloudError(L10n.text("此构建缺少受保护钥匙串权限。请使用已配置钥匙串权限的签名版本，或在远端手动输入密码。"))
         }
-        return CloudError("无法\(action)本机受保护的远程密码（\(status)）。")
+        return CloudError(L10n.text("无法\(action)本机受保护的远程密码（\(status)）。"))
     }
 }
 
@@ -162,11 +162,11 @@ struct DesktopRemoteSecurityMessage: Codable, CustomStringConvertible, CustomDeb
         case permission, notLocked, inputUnavailable, repeated, limit
         var message: String {
             switch self {
-            case .permission: "当前连接没有鼠标键盘控制授权。"
-            case .notLocked: "远端不再处于可解锁的已登录锁屏会话，未输入密码。"
-            case .inputUnavailable: "远端未能提交密码，请检查录入权限并聚焦远端密码框。"
-            case .repeated: "此解锁请求已处理，不会重复输入密码。"
-            case .limit: "本次连接解锁尝试过于频繁，请稍后重试。"
+            case .permission: L10n.text("当前连接没有鼠标键盘控制授权。")
+            case .notLocked: L10n.text("远端不再处于可解锁的已登录锁屏会话，未输入密码。")
+            case .inputUnavailable: L10n.text("远端未能提交密码，请检查录入权限并聚焦远端密码框。")
+            case .repeated: L10n.text("此解锁请求已处理，不会重复输入密码。")
+            case .limit: L10n.text("本次连接解锁尝试过于频繁，请稍后重试。")
             }
         }
     }
@@ -234,10 +234,10 @@ struct DesktopRemoteSecurityViewer {
     var lockChanging: Bool { lockRequest != nil && !lockTimedOut }
     var selectedLock: Bool { lockRequest?.lockOnDisconnect ?? preference }
     var lockStatus: String {
-        if !supported { return "对方尚未声明支持断连锁屏与一键解锁，请确认两端已升级。" }
+        if !supported { return L10n.text("对方尚未声明支持断连锁屏与一键解锁，请确认两端已升级。") }
         if let lockFailure { return lockFailure }
-        if lockChanging { return "正在等待被控电脑确认…" }
-        return confirmedLock == true ? "被控电脑已确认：连接结束后自动锁屏。" : "当前连接结束后不自动锁屏。"
+        if lockChanging { return L10n.text("正在等待被控电脑确认…") }
+        return confirmedLock == true ? L10n.text("被控电脑已确认：连接结束后自动锁屏。") : L10n.text("当前连接结束后不自动锁屏。")
     }
     mutating func configure(_ enabled: Bool) -> DesktopRemoteSecurityMessage? {
         guard supported, !lockChanging else { return nil }
@@ -262,7 +262,7 @@ struct DesktopRemoteSecurityViewer {
                 }
             }
         } else if message.action == .unlockResult, message.requestID == unlockRequest {
-            if message.submitted == true { unlockMessage = "密码已提交，等待远端确认解锁…" }
+            if message.submitted == true { unlockMessage = L10n.text("密码已提交，等待远端确认解锁…") }
             else { unlockRequest = nil; unlockMessage = message.failure?.message }
         }
         return nil
@@ -270,25 +270,25 @@ struct DesktopRemoteSecurityViewer {
     mutating func expireLock(_ id: UUID) {
         guard lockRequest?.requestID == id else { return }
         lockTimedOut = true; confirmedLock = nil
-        lockFailure = "未收到被控电脑确认，断连锁屏状态未确认；可重新确认。"
+        lockFailure = L10n.text("未收到被控电脑确认，断连锁屏状态未确认；可重新确认。")
     }
     mutating func lockSendFailed(_ id: UUID) {
         guard lockRequest?.requestID == id else { return }
         lockRequest = nil; lockTimedOut = false
-        lockFailure = "设置未能通过加密控制通道发送，尚未更改被控电脑的策略。"
+        lockFailure = L10n.text("设置未能通过加密控制通道发送，尚未更改被控电脑的策略。")
     }
     mutating func beginUnlock() -> UUID? {
         guard supported, unlockRequest == nil else { return nil }
-        let id = UUID(); unlockRequest = id; unlockMessage = "正在向锁屏中的电脑提交密码…"
+        let id = UUID(); unlockRequest = id; unlockMessage = L10n.text("正在向锁屏中的电脑提交密码…")
         return id
     }
     mutating func expireUnlock(_ id: UUID) {
         guard unlockRequest == id else { return }
-        unlockRequest = nil; unlockMessage = "未确认远端已解锁，请检查密码和远端密码框；不会自动重试。"
+        unlockRequest = nil; unlockMessage = L10n.text("未确认远端已解锁，请检查密码和远端密码框；不会自动重试。")
     }
     mutating func confirmUnlocked() {
         guard unlockRequest != nil else { return }
-        unlockRequest = nil; unlockMessage = "远端已确认解锁。"
+        unlockRequest = nil; unlockMessage = L10n.text("远端已确认解锁。")
     }
     mutating func unlockFailed(_ message: String) { unlockRequest = nil; unlockMessage = message }
 }
@@ -305,7 +305,7 @@ struct DesktopRemoteSecurityViewer {
     }
     private func pair(_ key: CGKeyCode, flags: CGEventFlags = [], text: String? = nil) throws -> [CGEvent] {
         guard let down = CGEvent(keyboardEventSource: nil, virtualKey: key, keyDown: true),
-              let up = CGEvent(keyboardEventSource: nil, virtualKey: key, keyDown: false) else { throw CloudError("无法生成系统键盘事件。") }
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: key, keyDown: false) else { throw CloudError(L10n.text("无法生成系统键盘事件。")) }
         for event in [down, up] {
             event.flags = flags
             if let text {
@@ -319,9 +319,9 @@ struct DesktopRemoteSecurityViewer {
         for event in events { event.timestamp = DispatchTime.now().uptimeNanoseconds; post(event) }
     }
     func submitPassword(_ password: String) throws {
-        guard DesktopRemoteSecurityMessage.validPassword(password) else { throw CloudError("远程密码格式无效。") }
-        guard canPost() else { throw CloudError("缺少辅助功能或输入事件权限。") }
-        guard session().canHost, session().locked else { throw CloudError("远端已离开锁屏会话，未输入密码。") }
+        guard DesktopRemoteSecurityMessage.validPassword(password) else { throw CloudError(L10n.text("远程密码格式无效。")) }
+        guard canPost() else { throw CloudError(L10n.text("缺少辅助功能或输入事件权限。")) }
+        guard session().canHost, session().locked else { throw CloudError(L10n.text("远端已离开锁屏会话，未输入密码。")) }
         // 用户先在远端选择登录用户和密码框；⌘A 替换该框内容，Unicode 事件不依赖输入法或剪贴板。
         let command = try pair(55)
         command[0].flags = .maskCommand; command[1].flags = []
@@ -330,14 +330,14 @@ struct DesktopRemoteSecurityViewer {
         let submit = try pair(36)
         emit(select)
         for events in characters + [submit] {
-            guard canPost(), session().canHost, session().locked else { throw CloudError("远端会话或输入权限已改变，已停止输入。") }
+            guard canPost(), session().canHost, session().locked else { throw CloudError(L10n.text("远端会话或输入权限已改变，已停止输入。")) }
             emit(events)
         }
     }
     func lock() throws {
-        guard canPost() else { throw CloudError("断连锁屏缺少辅助功能或输入事件权限。") }
+        guard canPost() else { throw CloudError(L10n.text("断连锁屏缺少辅助功能或输入事件权限。")) }
         let current = session()
-        guard current.canHost else { throw CloudError("当前用户会话不可用，未发送锁屏快捷键。") }
+        guard current.canHost else { throw CloudError(L10n.text("当前用户会话不可用，未发送锁屏快捷键。")) }
         if current.locked { return }
         let controls = try pair(59), commands = try pair(55)
         // 按下 ⌃、⌘，发送 Q，依次释放；采用 macOS 的标准 ⌃⌘Q 锁屏快捷键。

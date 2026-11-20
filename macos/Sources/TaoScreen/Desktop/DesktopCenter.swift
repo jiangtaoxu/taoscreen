@@ -39,13 +39,13 @@ final class DesktopCenter: ObservableObject, Identifiable {
         }
     }
     @Published private(set) var online = false
-    @Published private(set) var status = "未开启"
+    @Published private(set) var status = L10n.text("未开启")
     @Published private(set) var peers: [DesktopPeer] = []
     @Published private(set) var invitation: DesktopInvitation?
     @Published private(set) var peer: DesktopPeer?
     @Published private(set) var isHost = false
     @Published private var virtualDisplay: DesktopVirtualDisplay?
-    var sharedScreenName: String { virtualDisplay?.preset.title ?? "屏幕" }
+    var sharedScreenName: String { virtualDisplay?.preset.title ?? L10n.text("屏幕") }
     var managedVirtualDisplayID: CGDirectDisplayID? { virtualDisplay?.id ?? alternateHost?.virtualDisplay?.id }
     @Published private(set) var controlAllowed = false
     @Published private(set) var audioAllowed = false
@@ -81,7 +81,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         desktopWindow.updatePresentation()
     }
     @Published private(set) var video: RTCVideoTrack?
-    @Published private(set) var route = "正在协商"
+    @Published private(set) var route = L10n.text("正在协商")
     @Published private(set) var connected = false
     @Published private(set) var connectionTiming = DesktopConnectionTiming()
     @Published private(set) var relayAvailable = false
@@ -159,11 +159,11 @@ final class DesktopCenter: ObservableObject, Identifiable {
     var privacyPausedForLock: Bool { privacyRequested && (isHost ? localSession.locked : remoteScreenLocked) }
 
     var privacyStatusText: String {
-        if privacyChanging { return "正在切换隐私屏…" }
-        if !privacyStateKnown { return "隐私屏状态未确认，请重新切换或在被控端检查。" }
-        if privacyPausedForLock { return "锁屏期间暂停隐私屏，解锁后恢复。" }
-        if privacyActive { return "隐私屏已开启 · 本机键鼠仍可使用 · ⌃⌥⇧Esc 退出" }
-        return "隐私屏未开启 · 本机键鼠仍可使用 · 启用后可按 ⌃⌥⇧Esc 退出"
+        if privacyChanging { return L10n.text("正在切换隐私屏…") }
+        if !privacyStateKnown { return L10n.text("隐私屏状态未确认，请重新切换或在被控端检查。") }
+        if privacyPausedForLock { return L10n.text("锁屏期间暂停隐私屏，解锁后恢复。") }
+        if privacyActive { return L10n.text("隐私屏已开启 · 本机键鼠仍可使用 · ⌃⌥⇧Esc 退出") }
+        return L10n.text("隐私屏未开启 · 本机键鼠仍可使用 · 启用后可按 ⌃⌥⇧Esc 退出")
     }
 
     func setHostPrivacy(_ enabled: Bool) {
@@ -184,7 +184,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             guard let self, !Task.isCancelled, self.sessionID == id else { return }
             self.privacyChanging = false
             self.privacyStateKnown = false
-            self.message = "尚未收到隐私屏切换结果，请检查被控端状态后重试。"
+            self.message = L10n.text("尚未收到隐私屏切换结果，请检查被控端状态后重试。")
         }
     }
 
@@ -197,7 +197,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
     func receivePrivacy(_ value: DesktopPrivacyMessage) {
         guard value.isValid, sessionID != nil else { return }
         if isHost, value.action == .request {
-            guard controlAllowed else { sendPrivacyStatus(failure: "仅观看连接不能切换隐私屏。"); return }
+            guard controlAllowed else { sendPrivacyStatus(failure: L10n.text("仅观看连接不能切换隐私屏。")); return }
             setHostPrivacy(value.enabled)
         } else if !isHost, value.action == .status {
             privacySupported = true; privacyRequested = value.enabled
@@ -212,7 +212,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         guard privacyRequested, !localSession.locked else { privacyCurtain.stop(); privacyActive = false; return }
         let image = privacyLibrary.selectedImage.flatMap { privacyLibrary.image($0) }
         if privacyLibrary.selectedImage != nil && image == nil {
-            message = "隐私屏图片无法读取，已改用深灰提示屏。"
+            message = L10n.text("隐私屏图片无法读取，已改用深灰提示屏。")
         }
         try privacyCurtain.show(preset: privacyLibrary.preset, image: image)
     }
@@ -226,7 +226,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 privacyChanging = true; sendPrivacyStatus()
                 restartCapture(reason: "privacy-changed")
             } else { sendPrivacyStatus() }
-        } catch { disconnect("无法启用隐私屏：\(error.localizedDescription)") }
+        } catch { disconnect(L10n.text("无法启用隐私屏：\(error.localizedDescription)")) }
     }
 
     private weak var cloud: DesktopAccountState?
@@ -289,7 +289,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in self?.permissions.refresh() }.store(in: &observations)
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.willSleepNotification)
-            .sink { [weak self] _ in Task { @MainActor in self?.suspendSharing("电脑进入睡眠，共享已停止。") } }.store(in: &observations)
+            .sink { [weak self] _ in Task { @MainActor in self?.suspendSharing(L10n.text("电脑进入睡眠，共享已停止。")) } }.store(in: &observations)
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.sessionDidResignActiveNotification)
             .sink { [weak self] _ in Task { @MainActor in self?.localSessionChanged() } }.store(in: &observations)
         NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)
@@ -310,7 +310,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             .sink { [weak self] _ in
                 guard let self, self.isHost else { return }
                 if self.capture != nil, self.virtualDisplay?.isExtended == false {
-                    self.endVirtualDisplaySharing("虚拟屏已断开或进入镜像模式，共享已停止。")
+                    self.endVirtualDisplaySharing(L10n.text("虚拟屏已断开或进入镜像模式，共享已停止。"))
                 } else if self.privacyRequested {
                     self.refreshPrivacy()
                 }
@@ -336,7 +336,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         localSession = next
         DesktopSessionLog.record("local-session console=\(next.onConsole) loggedIn=\(next.loggedIn) locked=\(next.locked) host=\(isHost)")
         guard next.canHost else {
-            disconnectAll("当前用户会话已离开，共享已停止。")
+            disconnectAll(L10n.text("当前用户会话已离开，共享已停止。"))
             return
         }
         guard !sessionSuspended else { return }
@@ -373,7 +373,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 if self.connected, self.localSessionAvailable, self.captureRecovery.consume(error) {
                     self.restartCapture(reason: "system-stopped-stream")
                 } else {
-                    let reason = "屏幕采集已停止：\(error.localizedDescription)"
+                    let reason = L10n.text("屏幕采集已停止：\(error.localizedDescription)")
                     if self.virtualDisplay != nil { self.endVirtualDisplaySharing(reason) }
                     else { self.disconnect(reason) }
                 }
@@ -416,7 +416,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 self.sendVideoStatus()
             } catch {
                 guard !Task.isCancelled, self.sessionID == id, self.captureGeneration == token else { return }
-                let reason = "无法恢复屏幕采集：\(error.localizedDescription)"
+                let reason = L10n.text("无法恢复屏幕采集：\(error.localizedDescription)")
                 if self.virtualDisplay != nil { self.endVirtualDisplaySharing(reason) }
                 else { self.disconnect(reason) }
             }
@@ -430,7 +430,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if settings.enabled, !checkPermissions(control: settings.control, prompt: true) { return false }
         // 系统权限弹窗可能运行嵌套事件循环，返回后再次确认账号没有切换。
         guard cloud?.account?.id == account.id, cloud?.peerClient != nil, settingsAccountID == account.id else { return false }
-        if unattendedSession, settings != unattended { disconnect("无人值守设置已更改，共享已停止。") }
+        if unattendedSession, settings != unattended { disconnect(L10n.text("无人值守设置已更改，共享已停止。")) }
         unattended = settings
         settings.save(accountID: account.id, defaults: DesktopRuntime.defaults)
         message = nil
@@ -458,9 +458,9 @@ final class DesktopCenter: ObservableObject, Identifiable {
             try process.run()
             DesktopPermissionRelaunch.prepareForTermination(windows: NSApp.windows)
             shutdown()
-            status = "正在重启 TaoScreen…"
+            status = L10n.text("正在重启 TaoScreen…")
             DispatchQueue.main.async { NSApp.terminate(nil) }
-        } catch { message = "无法重启 TaoScreen：\(error.localizedDescription)。请退出后从“应用程序”重新打开。" }
+        } catch { message = L10n.text("无法重启 TaoScreen：\(error.localizedDescription)。请退出后从“应用程序”重新打开。") }
     }
 
     private func reconcile() {
@@ -474,7 +474,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if next == accountID, serviceTask != nil { return }
         shutdown()
         guard let next, let api = cloud?.peerClient else {
-            status = enabled ? "请先登录 TaoScreen 账户" : "未开启"; return
+            status = enabled ? L10n.text("请先登录 TaoScreen 账户") : L10n.text("未开启"); return
         }
         accountID = next
         RemoteAvailability.shared.setActive(.desktop, true)
@@ -487,7 +487,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 var openedAt: TimeInterval?
                 var permanentFailure = false
                 do {
-                    self.status = self.signalRecovering ? "正在恢复桌面信令…" : "正在连接服务…"
+                    self.status = self.signalRecovering ? L10n.text("正在恢复桌面信令…") : L10n.text("正在连接服务…")
                     self.configuration = try await api.desktopConfiguration()
                     guard self.generation == token, !Task.isCancelled else { return }
                     self.relayAvailable = self.configuration?.relayAvailable == true
@@ -525,7 +525,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                         guard self.generation == token, !Task.isCancelled, self.socket === socket else { return }
                         let data: Data
                         switch value { case .data(let bytes): data = bytes; case .string(let text): data = Data(text.utf8); @unknown default: continue }
-                        guard data.count <= 64 * 1024 else { throw CloudError("桌面信令过大。") }
+                        guard data.count <= 64 * 1024 else { throw CloudError(L10n.text("桌面信令过大。")) }
                         let signal = try JSONDecoder().decode(DesktopSignal.self, from: data)
                         self.lastHeartbeat = ProcessInfo.processInfo.systemUptime
                         if signal.type == "hello" { openedAt = self.lastHeartbeat }
@@ -550,12 +550,12 @@ final class DesktopCenter: ObservableObject, Identifiable {
                     self.status = failure.message
                     if permanentFailure || !self.beginSignalRecovery() {
                         if self.sessionID != nil || self.invitation != nil {
-                            self.disconnect(failure.endsSession ? failure.message : "信令连接中断，当前连接无法恢复，请重新连接。", notify: false)
+                            self.disconnect(failure.endsSession ? failure.message : L10n.text("信令连接中断，当前连接无法恢复，请重新连接。"), notify: false)
                         }
                     }
                     for viewer in self.viewerSessions {
                         if permanentFailure || !viewer.beginSignalRecovery() {
-                            viewer.disconnect(failure.endsSession ? failure.message : "信令连接中断，请重新连接。", notify: false)
+                            viewer.disconnect(failure.endsSession ? failure.message : L10n.text("信令连接中断，请重新连接。"), notify: false)
                         }
                     }
                 }
@@ -588,7 +588,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 try? await Task.sleep(for: .seconds(remaining))
                 guard !Task.isCancelled, let self, self.sessionID == id,
                       self.signalRecovery.token == recoveryToken else { return }
-                self.disconnect("信令在一分钟内未能恢复，桌面共享已停止，请重新连接。", notify: false)
+                self.disconnect(L10n.text("信令在一分钟内未能恢复，桌面共享已停止，请重新连接。"), notify: false)
             }
         }
         return true
@@ -611,7 +611,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         showDesktopWindow(sessionID: viewer.id)
         guard let connectionID = viewer.sessionID else { return }
         viewer.send(.init(type: "invite", id: connectionID, to: peer.id))
-        viewer.armTimeout(connectionID, seconds: 60, message: "对方未在一分钟内响应连接请求。")
+        viewer.armTimeout(connectionID, seconds: 60, message: L10n.text("对方未在一分钟内响应连接请求。"))
     }
 
     /// 先登记会话，随后由 connect 打开窗口、发送邀请；所有观看会话共享根中心的信令通道。
@@ -622,7 +622,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         viewer.coordinator = self; viewer.cloud = cloud; viewer.accountID = accountID ?? cloud?.account?.id
         viewer.online = online; viewer.supportsSignalResume = supportsSignalResume
         viewer.supportsSessionKeepalive = supportsSessionKeepalive
-        viewer.sessionID = UUID(); viewer.peer = peer; viewer.route = "正在请求连接"
+        viewer.sessionID = UUID(); viewer.peer = peer; viewer.route = L10n.text("正在请求连接")
         viewer.restoreViewerPreferences()
         viewerSessions.append(viewer)
         return viewer
@@ -651,7 +651,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             viewer.sessionID = id
             viewer.unattendedSession = trusted
             if showWindow { showDesktopWindow(sessionID: viewer.id) }
-            viewer.armTimeout(id, seconds: 60, message: trusted ? "对方未能启动无人值守共享。" : "对方未在一分钟内确认免登录连接。")
+            viewer.armTimeout(id, seconds: 60, message: trusted ? L10n.text("对方未能启动无人值守共享。") : L10n.text("对方未在一分钟内确认免登录连接。"))
         }
         return true
     }
@@ -660,7 +660,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         guard let connection = directConnection, connection.id == request.id else { return }
         guard let grant = connection.authorizedGrant?() else {
             send(.init(type: "reject", id: request.id, to: request.peer.id,
-                       payload: .init(message: "无人值守授权已失效，请在被控 Mac 检查。")))
+                       payload: .init(message: L10n.text("无人值守授权已失效，请在被控 Mac 检查。"))))
             finishDirectConnection()
             return
         }
@@ -669,9 +669,9 @@ final class DesktopCenter: ObservableObject, Identifiable {
             NSApp?.requestUserAttention(.informationalRequest)
             let missing = permissions.snapshot.missing(control: grant.control)
             let base = permissions.snapshot.rejectionMessage(control: grant.control)
-                ?? "无人值守授权或 macOS 屏幕录制、辅助功能权限不可用，请在被控 Mac 检查。"
+                ?? L10n.text("无人值守授权或 macOS 屏幕录制、辅助功能权限不可用，请在被控 Mac 检查。")
             let reason = missing.contains(.screenRecording)
-                ? "\(base)（请确认系统设置中的屏幕录制权限已勾选并重启 TaoScreen）"
+                ? L10n.text("\(base)（请确认系统设置中的屏幕录制权限已勾选并重启 TaoScreen）")
                 : base
             send(.init(type: "reject", id: request.id, to: request.peer.id,
                        payload: .init(message: reason)))
@@ -762,11 +762,11 @@ final class DesktopCenter: ObservableObject, Identifiable {
         permissions.clearReminder()
         sessionID = id; peer = invitation.peer; self.invitation = nil; isHost = true
         unattendedSession = unattended
-        controlAllowed = control; audioAllowed = audio; route = "正在准备共享"; message = nil
+        controlAllowed = control; audioAllowed = audio; route = L10n.text("正在准备共享"); message = nil
         hostVideoPreset = .ultra
         privacyRequested = privacyLibrary.settings.automatic
         privacyChanging = privacyRequested
-        armTimeout(id, seconds: 45, message: "桌面连接超时。")
+        armTimeout(id, seconds: 45, message: L10n.text("桌面连接超时。"))
         do {
             localSession = .current
             let displayID: CGDirectDisplayID
@@ -814,7 +814,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
 
     private func checkVirtualDisplay() throws {
         if virtualDisplay?.isExtended == false {
-            throw CloudError("虚拟屏已断开或进入镜像模式。")
+            throw CloudError(L10n.text("虚拟屏已断开或进入镜像模式。"))
         }
     }
 
@@ -830,7 +830,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if isDirect {
             config = .init(iceServers: [], relayAvailable: false)
         } else {
-            guard let api = cloud?.peerClient else { throw CloudError("请重新登录。") }
+            guard let api = cloud?.peerClient else { throw CloudError(L10n.text("请重新登录。")) }
             // 每个账号会话重新获取短期 TURN 凭据。
             config = try await api.desktopConfiguration()
         }
@@ -859,13 +859,13 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 })
             }
             files.onDeliverDrop = { [weak self] urls in
-                guard let self else { return .init(message: "连接已结束，文件未投放。", warning: true, paths: urls.map(\.path)) }
+                guard let self else { return .init(message: L10n.text("连接已结束，文件未投放。"), warning: true, paths: urls.map(\.path)) }
                 return await self.dropDelivery.deliver(urls, input: self.input, allowed: {
                     self.sessionID == id && self.connected && self.controlAllowed && self.localSessionAvailable && !self.localSession.locked
                 })
             }
             files.onCancelDrop = { [weak self] in self?.dropDelivery.invalidate() }
-            files.onDropDescription = { [weak self] in self?.dropDelivery.summary ?? "文件将保存在远端暂存目录。" }
+            files.onDropDescription = { [weak self] in self?.dropDelivery.summary ?? L10n.text("文件将保存在远端暂存目录。") }
         }
         files.onStatus = { [weak self] message, progress in
             guard self?.sessionID == id else { return }
@@ -975,7 +975,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             } else if !host, value.action == .status {
                 self.cursorSupported = true
                 self.remoteCursorVisible = value.showsCursor
-                if value.failed { self.message = "光标显示切换失败，已保留原来的显示方式。可切换光标选项重试。" }
+                if value.failed { self.message = L10n.text("光标显示切换失败，已保留原来的显示方式。可切换光标选项重试。") }
                 self.sendCursorPreference()
             }
         }
@@ -1012,8 +1012,8 @@ final class DesktopCenter: ObservableObject, Identifiable {
         rtc.onConnectionAddresses = { [weak self] value in self?.receiveConnectionAddresses(value, id: id) }
         rtc.onRoute = { [weak self] route in
             guard let self, self.sessionID == id else { return }
-            if self.restrictedDirectSession { self.route = "Tailscale 无人值守" }
-            else { self.route = self.isDirect ? "免登录直连" : route }
+            if self.restrictedDirectSession { self.route = L10n.text("Tailscale 无人值守") }
+            else { self.route = self.isDirect ? L10n.text("免登录直连") : route }
         }
         rtc.onState = { [weak self] state in
             self?.receiveRTCState(state, id: id)
@@ -1037,7 +1037,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             if isHost { sendHostSessionStatus(); refreshFileReturn() }
             if isHost, reconnecting { refreshPrivacy() }
             if !isHost { applyInitialVideoPreference() }
-        case .failed, .closed: self.disconnect("远程桌面连接已结束。")
+        case .failed, .closed: self.disconnect(L10n.text("远程桌面连接已结束。"))
         case .disconnected:
             self.input.releaseAll(); self.connected = false
             if isHost { refreshFileReturn() }
@@ -1047,7 +1047,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             self.disconnectTimeout = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(10))
                 guard !Task.isCancelled, self?.sessionID == id else { return }
-                self?.disconnect("网络连接中断，请重新连接。")
+                self?.disconnect(L10n.text("网络连接中断，请重新连接。"))
             }
         default: break
         }
@@ -1069,13 +1069,13 @@ final class DesktopCenter: ObservableObject, Identifiable {
             supportsSessionKeepalive = signal.payload?.keepalive == true
             if signalRecovery.isRecovering, let id = sessionID, let peer {
                 guard supportsSignalResume else {
-                    disconnect("服务端不支持恢复原桌面会话，请重新连接。", notify: false)
-                    status = "在线 · 仅同账户设备可见"
+                    disconnect(L10n.text("服务端不支持恢复原桌面会话，请重新连接。"), notify: false)
+                    status = L10n.text("在线 · 仅同账户设备可见")
                     return
                 }
-                status = "正在验证原桌面会话…"
+                status = L10n.text("正在验证原桌面会话…")
                 send(.init(type: "resume", id: id, to: peer.id, payload: .init(resumeToken: signalRecovery.token)))
-            } else { status = "在线 · 仅同账户设备可见" }
+            } else { status = L10n.text("在线 · 仅同账户设备可见") }
             return
         }
         if signal.type == "heartbeat" {
@@ -1099,7 +1099,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             let request = DesktopInvitation(id: id, peer: peer)
             if unattended.enabled, settingsAccountID == accountID, cloud?.peerClient != nil {
                 guard localSessionAvailable else {
-                    send(.init(type: "reject", id: id, to: from, payload: .init(message: "对方当前处于休眠、未登录或非活动用户会话，暂时无法无人值守连接。"))); return
+                    send(.init(type: "reject", id: id, to: from, payload: .init(message: L10n.text("对方当前处于休眠、未登录或非活动用户会话，暂时无法无人值守连接。")))); return
                 }
                 guard checkPermissions(control: unattended.control, prompt: false) else {
                     permissions.remind(requester: peer.name, control: unattended.control)
@@ -1111,7 +1111,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 return
             }
             guard DesktopLocalSession.current.canStart(unattended: false), !sessionSuspended else {
-                send(.init(type: "reject", id: id, to: from, payload: .init(message: "对方屏幕已锁定，需事先在被控电脑上开启无人值守才能免确认连接。"))); return
+                send(.init(type: "reject", id: id, to: from, payload: .init(message: L10n.text("对方屏幕已锁定，需事先在被控电脑上开启无人值守才能免确认连接。")))); return
             }
             presentInvitation(request)
             return
@@ -1127,38 +1127,38 @@ final class DesktopCenter: ObservableObject, Identifiable {
             case "resumed":
                 guard signalRecovery.confirm(signal.payload?.resumeToken, now: ProcessInfo.processInfo.systemUptime) else { return }
                 signalRecoveryTask?.cancel(); signalRecoveryTask = nil; signalRecovering = false
-                status = "在线 · 仅同账户设备可见"
+                status = L10n.text("在线 · 仅同账户设备可见")
                 DesktopSessionLog.record("signal-recovery-confirmed")
                 let candidates = pendingCandidates; pendingCandidates.removeAll()
                 for candidate in candidates { send(candidate) }
             case "accept" where !isHost && rtc == nil:
                 controlAllowed = signal.payload?.control == true; audioAllowed = signal.payload?.audio == true
                 filesAllowed = !restrictedDirectSession && signal.payload?.files == true
-                route = "正在建立加密连接"
-                armTimeout(id, seconds: 40, message: isDirect ? "无法建立画面连接，请检查两台 Mac 的网络和防火墙。"
-                            : "无法连接对方，请检查网络或 TURN 中继配置。")
+                route = L10n.text("正在建立加密连接")
+                armTimeout(id, seconds: 40, message: isDirect ? L10n.text("无法建立画面连接，请检查两台 Mac 的网络和防火墙。")
+                            : L10n.text("无法连接对方，请检查网络或 TURN 中继配置。"))
                 try await prepareRTC(id: id, host: false)
                 guard sessionID == id, let rtc else { return }
                 let sdp = try await rtc.makeDescription(offer: true)
                 guard sessionID == id else { return }
                 send(.init(type: "offer", id: id, to: peer?.id, payload: .init(sdp: sdp)))
             case "offer" where isHost:
-                guard let sdp = signal.payload?.sdp, let rtc else { throw CloudError("无效的桌面连接请求。") }
+                guard let sdp = signal.payload?.sdp, let rtc else { throw CloudError(L10n.text("无效的桌面连接请求。")) }
                 try await rtc.setRemote(sdp, offer: true)
                 let answer = try await rtc.makeDescription(offer: false)
                 guard sessionID == id else { return }
                 send(.init(type: "answer", id: id, to: peer?.id, payload: .init(sdp: answer)))
             case "answer" where !isHost:
-                guard let sdp = signal.payload?.sdp, let rtc else { throw CloudError("无效的桌面连接响应。") }
+                guard let sdp = signal.payload?.sdp, let rtc else { throw CloudError(L10n.text("无效的桌面连接响应。")) }
                 try await rtc.setRemote(sdp, offer: false)
             case "candidate": if let payload = signal.payload { rtc?.addCandidate(payload) }
-            case "reject": disconnect(signal.payload?.message ?? "对方拒绝或当前正忙。", notify: false)
-            case "end": disconnect(signal.payload?.message ?? "对方已结束共享。", notify: false)
+            case "reject": disconnect(signal.payload?.message ?? L10n.text("对方拒绝或当前正忙。"), notify: false)
+            case "end": disconnect(signal.payload?.message ?? L10n.text("对方已结束共享。"), notify: false)
             case "error":
                 if signalRecovery.isRecovering, ["service_unavailable", "rate_limited"].contains(signal.payload?.code ?? "") {
                     (coordinator?.socket ?? socket)?.cancel(with: .goingAway, reason: nil)
                 } else {
-                    disconnect(signal.payload?.message ?? "桌面请求失败。", notify: false)
+                    disconnect(signal.payload?.message ?? L10n.text("桌面请求失败。"), notify: false)
                 }
             default: break
             }
@@ -1178,7 +1178,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             if !self.permissions.snapshot.missing(control: control).isEmpty {
                 self.permissions.remind(requester: request.peer.name, control: control)
             }
-            self.reject(reason: self.permissions.snapshot.rejectionMessage(control: control) ?? "对方未在有效期内确认连接，请重新发起连接。")
+            self.reject(reason: self.permissions.snapshot.rejectionMessage(control: control) ?? L10n.text("对方未在有效期内确认连接，请重新发起连接。"))
         }
         NSApp?.requestUserAttention(.informationalRequest)
     }
@@ -1250,7 +1250,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if destination == .remote, !AXIsProcessTrusted() {
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
             guard AXIsProcessTrustedWithOptions(options) else {
-                shortcutCaptureError = "请在此 Mac 的系统设置中授予 TaoScreen 辅助功能权限，再选择由被控电脑接收快捷键。"
+                shortcutCaptureError = L10n.text("请在此 Mac 的系统设置中授予 TaoScreen 辅助功能权限，再选择由被控电脑接收快捷键。")
                 return
             }
         }
@@ -1299,13 +1299,13 @@ final class DesktopCenter: ObservableObject, Identifiable {
         let confirmed = format?.preset == hostVideoPreset && rtc.hasVideoConfiguration(hostVideoPreset)
         rtc.sendVideoSettings(.init(action: .status, requestID: requestID, preset: hostVideoPreset,
             width: confirmed ? format?.width : nil, height: confirmed ? format?.height : nil,
-            failure: failure.map { String($0.prefix(500)) } ?? (confirmed ? nil : "画面采集或编码状态尚未确认。")))
+            failure: failure.map { String($0.prefix(500)) } ?? (confirmed ? nil : L10n.text("画面采集或编码状态尚未确认。"))))
     }
 
     private func applyHostVideoPreset(_ request: DesktopVideoMessage) {
         guard let id = sessionID, let requestID = request.requestID, let rtc else { return }
         guard hostVideoRequestID == nil else {
-            sendVideoStatus(requestID: requestID, failure: "上一次画面设置仍在应用，请稍后重试。")
+            sendVideoStatus(requestID: requestID, failure: L10n.text("上一次画面设置仍在应用，请稍后重试。"))
             return
         }
         hostVideoRequestID = requestID
@@ -1320,7 +1320,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 }
             }
             guard self.localSessionAvailable, let capture = self.capture else {
-                self.sendVideoStatus(requestID: requestID, failure: "屏幕采集当前不可用，请稍后重试。")
+                self.sendVideoStatus(requestID: requestID, failure: L10n.text("屏幕采集当前不可用，请稍后重试。"))
                 return
             }
             let previous = self.hostVideoPreset
@@ -1387,7 +1387,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
             fileReturnPanel.stop()
             return
         }
-        fileReturnPanel.start(displayID: input.displayID, peer: peer?.name ?? "控制端", allowed: { [weak self] in
+        fileReturnPanel.start(displayID: input.displayID, peer: peer?.name ?? L10n.text("控制端"), allowed: { [weak self] in
             self?.rtc?.fileChannelOpen == true && self?.dropDelivery.isDelivering == false
                 && self?.fileTransfer?.canSend == true
         }, send: { [weak self] urls in
@@ -1399,7 +1399,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
     @discardableResult
     func sendFiles(_ urls: [URL], paste: Bool = false) -> Bool {
         guard canSendFiles else {
-            message = filesAllowed ? "请等待连接或当前文件传输完成。" : "对方未允许文件传输，或使用的 TaoScreen 版本不支持该功能。"
+            message = filesAllowed ? L10n.text("请等待连接或当前文件传输完成。") : L10n.text("对方未允许文件传输，或使用的 TaoScreen 版本不支持该功能。")
             return false
         }
         return fileTransfer?.send(urls, paste: paste) == true
@@ -1408,7 +1408,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
     func dropFiles(_ urls: [URL], at point: DesktopDropPoint) -> Bool {
         guard canSendFiles, viewerControlEnabled, !remoteScreenLocked, point.isValid else { return false }
         if !dropSupported {
-            message = "对方版本不支持按位置投放；文件将保存到远端下载目录，请升级两端 TaoScreen。"
+            message = L10n.text("对方版本不支持按位置投放；文件将保存到远端下载目录，请升级两端 TaoScreen。")
             return sendFiles(urls)
         }
         return fileTransfer?.send(urls, paste: false, drop: point) == true
@@ -1426,7 +1426,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         guard canSendFiles else { return }
         let panel = NSOpenPanel()
         panel.canChooseFiles = true; panel.canChooseDirectories = true; panel.allowsMultipleSelection = true
-        panel.prompt = "发送到远端"
+        panel.prompt = L10n.text("发送到远端")
         let currentSession = sessionID
         panel.begin { [weak self] response in
             Task { @MainActor in
@@ -1443,7 +1443,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         if let files = NSPasteboard.general.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !files.isEmpty {
             sendFiles(files, paste: true); return
         }
-        guard let text = NSPasteboard.general.string(forType: .string) else { message = "当前支持粘贴文本、文件和文件夹。"; return }
+        guard let text = NSPasteboard.general.string(forType: .string) else { message = L10n.text("当前支持粘贴文本、文件和文件夹。"); return }
         pasteText(text)
     }
     func pasteUnifiedClipboard() {
@@ -1475,15 +1475,15 @@ final class DesktopCenter: ObservableObject, Identifiable {
         catch { remotePasswordMessage = error.localizedDescription }
     }
     func saveRemotePassword(_ password: String, for scope: DesktopRemotePasswordScope) throws {
-        guard remotePasswordScope == scope else { throw CloudError("账号或远程电脑已改变，未保存密码。") }
-        guard DesktopRemoteSecurityMessage.validPassword(password) else { throw CloudError("密码不能为空、超过 1024 字节或包含控制字符。") }
+        guard remotePasswordScope == scope else { throw CloudError(L10n.text("账号或远程电脑已改变，未保存密码。")) }
+        guard DesktopRemoteSecurityMessage.validPassword(password) else { throw CloudError(L10n.text("密码不能为空、超过 1024 字节或包含控制字符。")) }
         try passwordStore.save(scope, password)
-        if remotePasswordScope == scope { hasSavedRemotePassword = true; remotePasswordMessage = "密码已保存到本机钥匙串。" }
+        if remotePasswordScope == scope { hasSavedRemotePassword = true; remotePasswordMessage = L10n.text("密码已保存到本机钥匙串。") }
     }
     func deleteRemotePassword(for scope: DesktopRemotePasswordScope) throws {
-        guard remotePasswordScope == scope else { throw CloudError("账号或远程电脑已改变，未删除密码。") }
+        guard remotePasswordScope == scope else { throw CloudError(L10n.text("账号或远程电脑已改变，未删除密码。")) }
         try passwordStore.delete(scope)
-        if remotePasswordScope == scope { hasSavedRemotePassword = false; remotePasswordMessage = "已删除本机保存的密码。" }
+        if remotePasswordScope == scope { hasSavedRemotePassword = false; remotePasswordMessage = L10n.text("已删除本机保存的密码。") }
     }
     private var canSubmitSavedPassword: Bool {
         !isHost && connected && controlAllowed && viewerControlEnabled && remoteScreenLocked &&
@@ -1508,18 +1508,18 @@ final class DesktopCenter: ObservableObject, Identifiable {
                 let password = try await passwordStore.read(scope)
                 try Task.checkCancellation()
                 guard self.sessionID == sessionID, remotePasswordScope == scope, canSubmitSavedPassword else {
-                    throw CloudError("连接或锁屏状态已改变，未发送密码。")
+                    throw CloudError(L10n.text("连接或锁屏状态已改变，未发送密码。"))
                 }
                 guard let password else {
                     hasSavedRemotePassword = false
-                    throw CloudError("本机未找到受保护的密码，请重新保存。")
+                    throw CloudError(L10n.text("本机未找到受保护的密码，请重新保存。"))
                 }
                 guard DesktopRemoteSecurityMessage.validPassword(password) else {
-                    throw CloudError("本机保存的密码格式无效，请重新保存。")
+                    throw CloudError(L10n.text("本机保存的密码格式无效，请重新保存。"))
                 }
                 guard let id = remoteSecurity.beginUnlock() else { return }
                 guard rtc?.sendSecurity(.init(action: .unlock, requestID: id, password: password)) == true else {
-                    remoteSecurity.unlockFailed("加密控制通道未就绪，未发送密码。")
+                    remoteSecurity.unlockFailed(L10n.text("加密控制通道未就绪，未发送密码。"))
                     return
                 }
                 securityUnlockTimeout?.cancel()
@@ -1529,7 +1529,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
                     self?.remoteSecurity.expireUnlock(id)
                 }
             } catch is CancellationError {
-                if !Task.isCancelled { remoteSecurity.unlockFailed("已取消本机验证。") }
+                if !Task.isCancelled { remoteSecurity.unlockFailed(L10n.text("已取消本机验证。")) }
             } catch {
                 if !Task.isCancelled { remoteSecurity.unlockFailed(error.localizedDescription) }
             }
@@ -1583,12 +1583,12 @@ final class DesktopCenter: ObservableObject, Identifiable {
                     if DesktopLocalSession.current.locked { return }
                     do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
                 }
-                self?.message = "断连锁屏请求已发送，但系统尚未确认锁定。请检查辅助功能权限和系统 ⌃⌘Q 锁屏快捷键。"
+                self?.message = L10n.text("断连锁屏请求已发送，但系统尚未确认锁定。请检查辅助功能权限和系统 ⌃⌘Q 锁屏快捷键。")
             }
-        } catch { message = "断连锁屏未完成：\(error.localizedDescription)" }
+        } catch { message = L10n.text("断连锁屏未完成：\(error.localizedDescription)") }
     }
 
-    func stopControl() { input.enabled = false; disconnect("本机已停止控制授权。") }
+    func stopControl() { input.enabled = false; disconnect(L10n.text("本机已停止控制授权。")) }
     func disconnect(_ reason: String? = nil, notify: Bool = true) {
         let lockAfterDisconnect = hostSecurity.end(established: sessionEstablished, authorized: isHost && controlAllowed,
                                                    localSession: DesktopLocalSession.current)
@@ -1624,7 +1624,7 @@ final class DesktopCenter: ObservableObject, Identifiable {
         filesAllowed = false; fileProgress = nil; fileMessage = nil
         fileReceiveMessage = nil; fileReceiveProgress = nil; receivedFileFolder = nil
         if transferState?.active == true {
-            transferState?.phase = .failed; transferState?.message = "连接已断开，未完成的传输已停止。"
+            transferState?.phase = .failed; transferState?.message = L10n.text("连接已断开，未完成的传输已停止。")
         }
         dropSupported = false; dropDelivery.invalidate()
         setRemoteShortcutsActive(false)

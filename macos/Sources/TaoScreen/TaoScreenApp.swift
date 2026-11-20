@@ -10,12 +10,14 @@ struct TaoScreenApp: App {
         Window("TaoScreen", id: "main") {
             DesktopRootView(account: account)
                 .frame(minWidth: 820, minHeight: 560)
+                .environment(\.locale, L10n.locale)
                 .task { DesktopCenter.shared.attach(cloud: account); DesktopUpdates.shared.startMonitoring() }
         }
         .defaultSize(width: 960, height: 640)
         .commands { CommandGroup(after: .appInfo) { UpdateMenuButton() } }
-        Window("端口映射", id: "ports") {
+        Window(L10n.text("端口映射"), id: "ports") {
             DesktopPortForwardingSheet(service: DesktopCenter.shared.portService)
+                .environment(\.locale, L10n.locale)
                 .task { DesktopCenter.shared.attach(cloud: account) }
         }.defaultSize(width: 1040, height: 660)
         Settings {
@@ -23,9 +25,11 @@ struct TaoScreenApp: App {
                 RemoteAvailabilitySettings()
                 DesktopUpdateSettings()
             }.formStyle(.grouped).frame(width: 480, height: 390)
+                .environment(\.locale, L10n.locale)
         }
         MenuBarExtra("TaoScreen", systemImage: "display.2") {
             DesktopMenu()
+                .environment(\.locale, L10n.locale)
         }
     }
 }
@@ -50,7 +54,7 @@ private struct DesktopRootView: View {
     private enum ConnectionMode: CaseIterable, Hashable {
         case direct, account
 
-        var title: String { self == .direct ? "免登录直连" : "账号直连" }
+        var title: String { self == .direct ? L10n.text("免登录直连") : L10n.text("账号直连") }
         var symbol: String { self == .direct ? "point.3.connected.trianglepath.dotted" : "person.crop.circle" }
     }
     private enum LoginSheet: String, Identifiable {
@@ -103,8 +107,9 @@ private struct DesktopRootView: View {
             .padding(4)
             .background(DesktopWorkspaceStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("连接方式")
+            .accessibilityLabel(L10n.text("连接方式"))
             Spacer()
+            DesktopLanguageMenu()
             accountControl
         }
         .padding(.horizontal, 24)
@@ -123,30 +128,30 @@ private struct DesktopRootView: View {
             .popover(isPresented: $showingAccount) {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(current.email).font(.headline)
-                    Text("已绑定的登录方式").foregroundStyle(.secondary)
+                    Text(L10n.text("已绑定的登录方式")).foregroundStyle(.secondary)
                     ForEach(account.identities) { identity in
                         Label("\(identity.provider.title) · \(identity.email)", systemImage: "checkmark.circle")
                             .font(.caption)
                     }
                     ForEach(account.enabledProviders) { provider in
                         if !account.identities.contains(where: { $0.provider == provider.id }) {
-                            Button("绑定 \(provider.id.title)") { Task { await account.link(provider: provider.id) } }
+                            Button(L10n.text("绑定 \(provider.id.title)")) { Task { await account.link(provider: provider.id) } }
                                 .disabled(account.busy)
                         }
                     }
-                    if account.busy { Button("取消登录") { account.cancelLogin() } }
+                    if account.busy { Button(L10n.text("取消登录")) { account.cancelLogin() } }
                     if let message = account.message { Text(message).foregroundStyle(.red) }
-                    Button("退出账号") { Task { await account.signOut() } }.disabled(account.busy)
+                    Button(L10n.text("退出账号")) { Task { await account.signOut() } }.disabled(account.busy)
                 }
                 .padding(20).frame(minWidth: 360)
                 .task { await account.loadIdentities(); await account.loadProviders() }
             }
         } else {
             Button { loginSheet = .settings } label: {
-                Label("账号登录设置", systemImage: "gearshape")
+                Label(L10n.text("账号登录设置"), systemImage: "gearshape")
                     .labelStyle(.iconOnly)
             }
-            .help("账号登录设置")
+            .help(L10n.text("账号登录设置"))
             .disabled(account.busy)
         }
     }
@@ -159,7 +164,8 @@ private struct DesktopModeButtonStyle: ButtonStyle {
         configuration.label
             .font(.callout.weight(selected ? .semibold : .medium))
             .foregroundStyle(selected ? DesktopWorkspaceStyle.accent : Color(nsColor: .secondaryLabelColor))
-            .frame(width: 128, height: 32)
+            .padding(.horizontal, 12)
+            .frame(minWidth: 128, minHeight: 32)
             .background {
                 if selected {
                     RoundedRectangle(cornerRadius: 8)
@@ -169,6 +175,68 @@ private struct DesktopModeButtonStyle: ButtonStyle {
             }
             .contentShape(RoundedRectangle(cornerRadius: 8))
             .opacity(configuration.isPressed ? 0.68 : 1)
+    }
+}
+
+private struct DesktopLanguageMenu: View {
+    @State private var requested: DesktopLanguage?
+    @State private var restartError: String?
+    @State private var confirmsRestart = false
+
+    var body: some View {
+        Menu {
+            languageButton(.system, title: L10n.text("跟随系统"))
+            languageButton(.chinese, title: "简体中文")
+            languageButton(.english, title: "English")
+        } label: {
+            Label(L10n.text("语言"), systemImage: "globe")
+                .labelStyle(.iconOnly)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help(L10n.text("切换语言"))
+        .alert(L10n.text("重启 TaoScreen 以切换语言？"), isPresented: $confirmsRestart) {
+            Button(L10n.text("取消"), role: .cancel) { requested = nil }
+            Button(L10n.text("重启")) { restartWithLanguage() }
+        } message: {
+            Text(L10n.text("重启会结束当前连接。"))
+        }
+        .alert(L10n.text("无法重启 TaoScreen"), isPresented: Binding(
+            get: { restartError != nil }, set: { if !$0 { restartError = nil } }
+        )) {
+            Button(L10n.text("完成"), role: .cancel) { restartError = nil }
+        } message: {
+            Text(restartError ?? "")
+        }
+    }
+
+    private func languageButton(_ preference: DesktopLanguage, title: String) -> some View {
+        Button {
+            requested = preference
+            confirmsRestart = true
+        } label: {
+            if preference == DesktopLanguage.preference {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+        .disabled(preference == DesktopLanguage.preference)
+    }
+
+    private func restartWithLanguage() {
+        guard let requested else { return }
+        do {
+            let process = try DesktopPermissionRelaunch.process(
+                app: Bundle.main.bundleURL, pid: ProcessInfo.processInfo.processIdentifier
+            )
+            try process.run()
+            DesktopRuntime.defaults.set(requested.rawValue, forKey: DesktopLanguage.preferenceKey)
+            DesktopPermissionRelaunch.prepareForTermination(windows: NSApp.windows)
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        } catch {
+            restartError = error.localizedDescription
+        }
     }
 }
 
@@ -205,26 +273,26 @@ private struct DesktopMenu: View {
     var body: some View {
         Text(center.status)
         if needsHostPermissionAttention {
-            Button("⚠️ 缺少被控权限（点击打开主窗口授权）") {
+            Button(L10n.text("⚠️ 缺少被控权限（点击打开主窗口授权）")) {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             }
         }
-        Button("端口映射…") { center.portService.activateMappingWindow(); openWindow(id: "ports"); NSApp.activate(ignoringOtherApps: true) }
-        Button("显示主窗口") { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
-        if center.isHost { Button("停止共享", role: .destructive) { center.disconnect() } }
-        if direct.isHost { Button("停止免登录共享", role: .destructive) { direct.disconnect() } }
-        Toggle("开启远程桌面", isOn: $center.enabled)
+        Button(L10n.text("端口映射…")) { center.portService.activateMappingWindow(); openWindow(id: "ports"); NSApp.activate(ignoringOtherApps: true) }
+        Button(L10n.text("显示主窗口")) { openWindow(id: "main"); NSApp.activate(ignoringOtherApps: true) }
+        if center.isHost { Button(L10n.text("停止共享"), role: .destructive) { center.disconnect() } }
+        if direct.isHost { Button(L10n.text("停止免登录共享"), role: .destructive) { direct.disconnect() } }
+        Toggle(L10n.text("开启远程桌面"), isOn: $center.enabled)
         Divider()
         UpdateMenuButton()
-        Button("退出 TaoScreen") { NSApp.terminate(nil) }.keyboardShortcut("q")
+        Button(L10n.text("退出 TaoScreen")) { NSApp.terminate(nil) }.keyboardShortcut("q")
     }
 }
 
 private struct UpdateMenuButton: View {
     @ObservedObject private var updates = DesktopUpdates.shared
     var body: some View {
-        Button("检查更新…") { updates.downloadUpdate() }
+        Button(L10n.text("检查更新…")) { updates.downloadUpdate() }
             .disabled(!updates.canCheck)
     }
 }

@@ -12,11 +12,11 @@ enum CloudCoding {
             c.path.isEmpty || c.path == "/",
             c.scheme == "https" || (c.scheme == "http" && ["localhost", "127.0.0.1", "[::1]", "::1"].contains(host))
         else {
-            throw CloudError("请输入 HTTPS 服务根地址；本机开发可使用 http://127.0.0.1:28080。")
+            throw CloudError(L10n.text("请输入 HTTPS 服务根地址；本机开发可使用 http://127.0.0.1:28080。"))
         }
         c.path = ""
         c.host = host.lowercased()
-        guard let url = c.url else { throw CloudError("服务地址无效。") }
+        guard let url = c.url else { throw CloudError(L10n.text("服务地址无效。")) }
         return url
     }
 }
@@ -26,7 +26,7 @@ struct CloudHTTPError: LocalizedError {
     let statusCode: Int
     let path: String
     var errorDescription: String? {
-        "TaoScreen 服务的 \(path) 返回 HTTP \(statusCode)，请核对服务器地址与服务状态。"
+        L10n.text("TaoScreen 服务的 \(path) 返回 HTTP \(statusCode)，请核对服务器地址与服务状态。")
     }
 }
 
@@ -48,7 +48,7 @@ struct CloudAPIError: Decodable, LocalizedError {
     let code: String
     let message: String
     let details: CloudJSON?
-    var errorDescription: String? { "\(message)（\(code)）" }
+    var errorDescription: String? { "\(L10n.value(message)) (\(code))" }
 }
 
 struct DesktopLoginMethods: Decodable {

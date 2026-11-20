@@ -42,10 +42,10 @@ struct DesktopPortWindowCloseGuard: NSViewRepresentable {
             guard !confirming else { return false }
             confirming = true
             let alert = NSAlert()
-            alert.messageText = "确定要关闭端口映射吗？"
-            alert.informativeText = "关闭后将断开本机发起的映射连接，所有对应规则停止监听。规则及启用状态保留，下次连接后恢复。"
-            alert.addButton(withTitle: "关闭并断开")
-            alert.addButton(withTitle: "取消")
+            alert.messageText = L10n.text("确定要关闭端口映射吗？")
+            alert.informativeText = L10n.text("关闭后将断开本机发起的映射连接，所有对应规则停止监听。规则及启用状态保留，下次连接后恢复。")
+            alert.addButton(withTitle: L10n.text("关闭并断开"))
+            alert.addButton(withTitle: L10n.text("取消"))
             alert.beginSheetModal(for: sender) { [weak self, weak sender] response in
                 guard let self else { return }
                 self.confirming = false

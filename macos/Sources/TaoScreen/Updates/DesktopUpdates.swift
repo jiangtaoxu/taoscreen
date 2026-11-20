@@ -19,24 +19,24 @@ final class DesktopUpdates: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     @Published private(set) var availableVersion: String?
     @Published private(set) var canCheck = false
-    @Published private(set) var status = "尚未检查"
+    @Published private(set) var status = L10n.text("尚未检查")
     private var controller: SPUStandardUpdaterController?
     private var observation: NSKeyValueObservation?
     private var timer: AnyCancellable?
 
     var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "未打包"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? L10n.text("未打包")
     }
 
     func startMonitoring() {
         guard controller == nil else { return }
         // swift run / 单元测试并非可替换的应用包，不启动安装器。
         guard Bundle.main.bundleURL.pathExtension == "app" else {
-            status = "请使用打包后的 TaoScreen 检查更新"
+            status = L10n.text("请使用打包后的 TaoScreen 检查更新")
             return
         }
         guard feedURL != nil else {
-            status = "此构建尚未配置自动更新"
+            status = L10n.text("此构建尚未配置自动更新")
             return
         }
         let controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
@@ -56,7 +56,7 @@ final class DesktopUpdates: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     func probe() {
         guard let updater = controller?.updater, updater.canCheckForUpdates else { return }
-        status = "正在检查…"
+        status = L10n.text("正在检查…")
         updater.checkForUpdateInformation()
     }
 
@@ -69,12 +69,12 @@ final class DesktopUpdates: NSObject, ObservableObject, SPUUpdaterDelegate {
 
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         availableVersion = item.displayVersionString
-        status = "可更新至 \(item.displayVersionString)"
+        status = L10n.text("可更新至 \(item.displayVersionString)")
     }
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
         availableVersion = nil
-        status = "已是最新版本"
+        status = L10n.text("已是最新版本")
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
@@ -92,18 +92,18 @@ final class DesktopUpdates: NSObject, ObservableObject, SPUUpdaterDelegate {
             case Int(SUError.noUpdateError.rawValue):
                 let reason = (error.userInfo[SPUNoUpdateFoundReasonKey] as? NSNumber)?.int32Value
                 switch reason {
-                case SPUNoUpdateFoundReason.onLatestVersion.rawValue: return "已是最新版本"
-                case SPUNoUpdateFoundReason.onNewerThanLatestVersion.rawValue: return "当前版本高于服务器发布版本"
-                case SPUNoUpdateFoundReason.systemIsTooOld.rawValue: return "新版本需要更高版本的 macOS"
-                case SPUNoUpdateFoundReason.systemIsTooNew.rawValue: return "新版本暂不支持当前 macOS"
-                case SPUNoUpdateFoundReason.hardwareDoesNotSupportARM64.rawValue: return "新版本仅支持 Apple Silicon"
-                default: return "暂无适用于当前设备的更新"
+                case SPUNoUpdateFoundReason.onLatestVersion.rawValue: return L10n.text("已是最新版本")
+                case SPUNoUpdateFoundReason.onNewerThanLatestVersion.rawValue: return L10n.text("当前版本高于服务器发布版本")
+                case SPUNoUpdateFoundReason.systemIsTooOld.rawValue: return L10n.text("新版本需要更高版本的 macOS")
+                case SPUNoUpdateFoundReason.systemIsTooNew.rawValue: return L10n.text("新版本暂不支持当前 macOS")
+                case SPUNoUpdateFoundReason.hardwareDoesNotSupportARM64.rawValue: return L10n.text("新版本仅支持 Apple Silicon")
+                default: return L10n.text("暂无适用于当前设备的更新")
                 }
-            case Int(SUError.installationCanceledError.rawValue): return "已取消更新，可稍后重试"
+            case Int(SUError.installationCanceledError.rawValue): return L10n.text("已取消更新，可稍后重试")
             default: break
             }
         }
-        return "检查或更新失败：\(error.localizedDescription)"
+        return L10n.text("检查或更新失败：\(error.localizedDescription)")
     }
 }
 
@@ -120,8 +120,8 @@ struct DesktopUpdateButton: View {
             }
             .buttonStyle(.plain)
             .disabled(!updates.canCheck)
-            .help("下载并更新至 \(version)")
-            .accessibilityLabel("下载并更新至 \(version)")
+            .help(L10n.text("下载并更新至 \(version)"))
+            .accessibilityLabel(L10n.text("下载并更新至 \(version)"))
         }
     }
 }
@@ -129,10 +129,10 @@ struct DesktopUpdateButton: View {
 struct DesktopUpdateSettings: View {
     @ObservedObject private var updates = DesktopUpdates.shared
     var body: some View {
-        Section("应用更新") {
-            LabeledContent("当前版本", value: updates.currentVersion)
+        Section(L10n.text("应用更新")) {
+            LabeledContent(L10n.text("当前版本"), value: updates.currentVersion)
             Text(updates.status).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-            Button(updates.availableVersion == nil ? "检查更新…" : "下载并更新…") { updates.downloadUpdate() }
+            Button(updates.availableVersion == nil ? L10n.text("检查更新…") : L10n.text("下载并更新…")) { updates.downloadUpdate() }
                 .disabled(!updates.canCheck)
         }
     }

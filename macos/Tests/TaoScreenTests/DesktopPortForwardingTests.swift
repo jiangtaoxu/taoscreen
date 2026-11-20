@@ -166,7 +166,7 @@ struct DesktopPortForwardingTests {
         try pair.viewer.save(rule); try pair.viewer.start(rule.id)
         try await wait("端口冲突回执") { pair.viewer.rules.first?.phase == .failed }
         #expect(pair.viewer.rules.first?.rule.listenPort == occupied.port)
-        #expect(pair.viewer.rules.first?.error?.contains("监听") == true)
+        #expect(pair.viewer.rules.first?.error?.contains(String(describing: rule.listener)) == true)
         #expect(pair.host.incomingRules.isEmpty)
     }
 
@@ -216,7 +216,7 @@ struct DesktopPortForwardingTests {
         try pair.viewer.save(rule); try pair.viewer.start(rule.id)
         #expect(pair.viewer.rules[0].phase == .starting)
         clock.value = 21; pair.viewer.tick()
-        #expect(pair.viewer.closed && pair.viewer.error?.contains("启动确认超时") == true)
+        #expect(pair.viewer.closed && pair.viewer.error == L10n.text("端口转发启动确认超时，通道已关闭，请重新连接设备。"))
         #expect(!pair.viewer.rules[0].running)
     }
 
@@ -245,7 +245,7 @@ struct DesktopPortForwardingTests {
         #expect(newRun != oldRun)
         pair.link.toViewerEnabled = false; pair.viewer.stop(rule.id)
         clock.value = 21; pair.viewer.tick()
-        #expect(pair.viewer.closed && pair.viewer.error?.contains("停止确认") == true)
+        #expect(pair.viewer.closed && pair.viewer.error == L10n.text("未收到停止确认，转发通道已关闭，请检查远端状态。"))
         #expect(pair.host.incomingRules.isEmpty)
     }
 
@@ -444,7 +444,7 @@ struct DesktopPortForwardingTests {
         do {
             try await rtc.setRemote("v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n", offer: true)
             Issue.record("端口通道不能接受桌面视频轨道")
-        } catch { #expect(error.localizedDescription == "独立端口连接不接受屏幕或声音轨道。") }
+        } catch { #expect(error.localizedDescription == L10n.text("独立端口连接不接受屏幕或声音轨道。")) }
     }
 
     @Test @MainActor func independentRecoveryRequiresOriginalNonceAndPortDisconnectKeepsDesktop() async throws {
@@ -507,7 +507,7 @@ struct DesktopPortForwardingTests {
         #expect(try JSONDecoder().decode(DesktopPortRule.self, from: JSONEncoder().encode(original)).isEnabled)
         var draft = DesktopPortRuleDraft(rule: original, duplicate: true)
         #expect(draft.id != original.id && !draft.editing && draft.listenPort.isEmpty)
-        #expect(draft.errors[.listenPort] == "必填")
+        #expect(draft.errors[.listenPort] == L10n.text("必填"))
         #expect(draft.destinationHost == original.destinationHost && draft.transport == .udp && draft.direction == .remoteToLocal)
         #expect(throws: CloudError.self) { try draft.makeRule() }
         draft.listenPort = " 15433 "

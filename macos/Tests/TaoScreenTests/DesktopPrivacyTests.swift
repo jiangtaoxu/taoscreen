@@ -181,7 +181,7 @@ struct DesktopPrivacyTests {
         do {
             _ = try await DesktopCapture.contentFilter(displayID: displayID, excludingWindowIDs: retired)
             Issue.record("消失的遮罩窗口必须使排除校验失败")
-        } catch { #expect(error.localizedDescription.contains("排除隐私屏")) }
+        } catch { #expect(error.localizedDescription == L10n.text("无法从远程画面排除隐私屏，共享已停止，请重新连接。")) }
     }
 
     private func pixel(_ image: CGImage, x: Int, y: Int) throws -> (UInt8, UInt8, UInt8) {

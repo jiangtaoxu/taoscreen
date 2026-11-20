@@ -4,7 +4,7 @@ import Darwin
 
 enum DesktopShortcutDestination: String, Codable, CaseIterable {
     case local, remote
-    var title: String { self == .local ? "控制端（此电脑）" : "被控电脑" }
+    var title: String { self == .local ? L10n.text("控制端（此电脑）") : L10n.text("被控电脑") }
 
     func forwards(_ flags: NSEvent.ModifierFlags) -> Bool {
         self == .remote || flags.intersection([.command, .control]).isEmpty
@@ -14,6 +14,7 @@ enum DesktopShortcutDestination: String, Codable, CaseIterable {
 /// 连接质量只按当前链路的实际 RTT 分档，不将它描述为 Wi-Fi 信号强度。
 enum DesktopConnectionQuality: String {
     case unknown = "测量中", good = "良好", fair = "一般", poor = "较差"
+    var title: String { L10n.value(rawValue) }
     init(milliseconds: Double?) {
         guard let value = milliseconds, value.isFinite, value >= 0 else { self = .unknown; return }
         self = value < 80 ? .good : value < 200 ? .fair : .poor
@@ -31,7 +32,7 @@ enum DesktopConnectionQuality: String {
 enum DesktopCursorMode: String, Codable, CaseIterable {
     case local, remote
 
-    var title: String { self == .local ? "本机优先" : "远端原样" }
+    var title: String { self == .local ? L10n.text("本机优先") : L10n.text("远端原样") }
 
     func showsRemoteCursor(canControl: Bool, windowActive: Bool) -> Bool {
         self != .local || !canControl || !windowActive
@@ -138,7 +139,7 @@ struct DesktopConnectionAddresses: Equatable {
     struct Endpoint: Equatable {
         let ip: String
         let relayed: Bool
-        var description: String { ip + (relayed ? "（中继）" : "") }
+        var description: String { ip + (relayed ? L10n.text("（中继）") : "") }
     }
     var local: Endpoint?
     var remote: Endpoint?
@@ -224,10 +225,10 @@ struct DesktopInput: Codable {
     /// 与旧版兼容：有序通道上先释放修饰键，再写入文字并执行粘贴，不发送回车。
     static func textPaste(_ text: String, transient: Bool = false) throws -> [Self] {
         guard !text.isEmpty else { return [] }
-        guard text.utf8.count <= 16 * 1024 else { throw CloudError("输入文本超过 16 KB，请缩短后重试。") }
+        guard text.utf8.count <= 16 * 1024 else { throw CloudError(L10n.text("输入文本超过 16 KB，请缩短后重试。")) }
         let clipboard = Self(kind: "clipboard", text: text, transient: transient ? true : nil)
         guard try JSONEncoder().encode(clipboard).count <= 32 * 1024 else {
-            throw CloudError("输入文本编码后过大，请缩短后重试。")
+            throw CloudError(L10n.text("输入文本编码后过大，请缩短后重试。"))
         }
         return [.init(kind: "release"), clipboard,
                 .init(kind: "key", down: true, key: 9, flags: CGEventFlags.maskCommand.rawValue),

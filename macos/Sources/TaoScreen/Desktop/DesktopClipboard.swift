@@ -89,7 +89,7 @@ final class DesktopClipboard {
         if !active { pendingFiles = nil; pendingPaste = false; return }
         if let pendingFiles, ProcessInfo.processInfo.systemUptime >= pendingFiles.deadline {
             self.pendingFiles = nil
-            failure("粘贴确认超时，请重试。")
+            failure(L10n.text("粘贴确认超时，请重试。"))
         }
         guard watching else { return }
         if host { pollHost() } else if !waitingForWatch { pollViewer() }
@@ -172,12 +172,12 @@ final class DesktopClipboard {
             } else if let text = board.string(forType: .string) {
                 value.text = text
             } else {
-                failure("当前支持粘贴本机文本、文件和文件夹。")
+                failure(L10n.text("当前支持粘贴本机文本、文件和文件夹。"))
                 return
             }
         }
-        guard value.isValid else { failure("粘贴文本超过 16 KB 或编码后过大，请缩短后重试。"); return }
-        if !send(value) { pendingFiles = nil; failure("剪贴板通道尚未就绪，请重试。") }
+        guard value.isValid else { failure(L10n.text("粘贴文本超过 16 KB 或编码后过大，请缩短后重试。")); return }
+        if !send(value) { pendingFiles = nil; failure(L10n.text("剪贴板通道尚未就绪，请重试。")) }
     }
 
     private func pollViewer() {
@@ -233,7 +233,7 @@ final class DesktopClipboard {
         if preserved == nil { preserved = Snapshot(board: board, text: transferableText()) }
         guard preserved != nil else {
             rejectedTransientPaste = true
-            _ = send(.init(action: .failure, text: "远端剪贴板超过 32 MB，无法保留原内容。请切换为远端输入法后重试。"))
+            _ = send(.init(action: .failure, text: L10n.text("远端剪贴板超过 32 MB，无法保留原内容。请切换为远端输入法后重试。")))
             return false
         }
         rejectedTransientPaste = false

@@ -158,7 +158,8 @@ func (s *Server) fail(w http.ResponseWriter, r *http.Request, err error) {
 	if e.Status == 429 {
 		w.Header().Set("Retry-After", "60")
 	}
-	_ = jsonReply(w, e.Status, map[string]any{"error": map[string]any{"code": e.Code, "message": e.Message, "details": e.Details, "request_id": r.Context().Value(requestKey)}})
+	message := webText(requestLanguage(r), e.Message)
+	_ = jsonReply(w, e.Status, map[string]any{"error": map[string]any{"code": e.Code, "message": message, "details": e.Details, "request_id": r.Context().Value(requestKey)}})
 }
 func jsonReply(w http.ResponseWriter, status int, v any) error {
 	data, e := json.Marshal(v)

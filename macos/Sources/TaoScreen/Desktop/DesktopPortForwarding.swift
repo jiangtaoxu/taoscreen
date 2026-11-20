@@ -34,7 +34,7 @@ final class DesktopPortForwarder: ObservableObject {
     private var pumping = false
     private lazy var outgoing = DesktopReliableSender(limit: DesktopPortLimits.queue, timeout: 15,
         send: { [weak self] in self?.send($0) == true },
-        failed: { [weak self] in self?.fail("端口转发通道持续拥塞，转发已停止，请重新连接设备。") })
+        failed: { [weak self] in self?.fail(L10n.text("端口转发通道持续拥塞，转发已停止，请重新连接设备。")) })
 
     @MainActor private final class Run {
         let id: UUID
@@ -101,18 +101,18 @@ final class DesktopPortForwarder: ObservableObject {
     var runningCount: Int { rules.filter(\.running).count }
     var statusText: String {
         if let error { return error }
-        if closed { return "端口转发通道已关闭，请重新连接设备。" }
-        if !channelOpen { return "等待端口转发通道；对方需升级到支持本功能的版本。" }
-        if host { return allowed() ? "已允许当前连接使用双向 TCP / UDP 转发。" : "当前连接未获端口转发授权。" }
-        if remoteAllowed == nil { return "正在确认对方的端口转发能力…" }
-        if remoteAllowed == false { return "对方未允许端口转发，请在被控端开启本次授权，或重新连接时授权。" }
-        if !allowed() { return "映射连接尚未就绪，连接后自动启动已启用规则。" }
-        return "已启用规则正在监听；连接加密传输，不依赖远程桌面。"
+        if closed { return L10n.text("端口转发通道已关闭，请重新连接设备。") }
+        if !channelOpen { return L10n.text("等待端口转发通道；对方需升级到支持本功能的版本。") }
+        if host { return allowed() ? L10n.text("已允许当前连接使用双向 TCP / UDP 转发。") : L10n.text("当前连接未获端口转发授权。") }
+        if remoteAllowed == nil { return L10n.text("正在确认对方的端口转发能力…") }
+        if remoteAllowed == false { return L10n.text("对方未允许端口转发，请在被控端开启本次授权，或重新连接时授权。") }
+        if !allowed() { return L10n.text("映射连接尚未就绪，连接后自动启动已启用规则。") }
+        return L10n.text("已启用规则正在监听；连接加密传输，不依赖远程桌面。")
     }
 
     func channelChanged(open: Bool) {
         guard !closed else { return }
-        if !open { fail("端口转发通道已关闭或对方版本不支持，请重新连接已升级的设备。"); return }
+        if !open { fail(L10n.text("端口转发通道已关闭或对方版本不支持，请重新连接已升级的设备。")); return }
         guard !channelOpen else { return }
         channelOpen = true
         refreshPermission()
@@ -127,13 +127,13 @@ final class DesktopPortForwarder: ObservableObject {
 
     func refreshPermission() {
         guard !closed else { return }
-        if !allowed() { stopAll(reason: "当前连接的端口转发授权已撤销或连接已中断。") }
+        if !allowed() { stopAll(reason: L10n.text("当前连接的端口转发授权已撤销或连接已中断。")) }
         if host, channelOpen { enqueue(.init(kind: .status, allowed: allowed())) }
         restoreEnabledRulesIfReady()
     }
     func sessionInterrupted() {
         restoredEnabledRules = false
-        stopAll(reason: "映射连接已中断，正在停止监听。")
+        stopAll(reason: L10n.text("映射连接已中断，正在停止监听。"))
     }
     private func restoreEnabledRulesIfReady() {
         guard canStart else { restoredEnabledRules = false; return }
@@ -147,14 +147,14 @@ final class DesktopPortForwarder: ObservableObject {
         }
     }
     func save(_ rule: DesktopPortRule) throws {
-        guard canEdit, rule.isValid else { throw CloudError("规则无法保存，请检查地址、端口及存储状态。") }
-        guard !rules.contains(where: { $0.id == rule.id && $0.running }) else { throw CloudError("请先停止这条规则，再修改配置。") }
+        guard canEdit, rule.isValid else { throw CloudError(L10n.text("规则无法保存，请检查地址、端口及存储状态。")) }
+        guard !rules.contains(where: { $0.id == rule.id && $0.running }) else { throw CloudError(L10n.text("请先停止这条规则，再修改配置。")) }
         var next = rules.map(\.rule)
         if let index = next.firstIndex(where: { $0.id == rule.id }) { next[index] = rule }
         else { next.append(rule) }
-        guard next.count <= DesktopPortLimits.rules else { throw CloudError("每台设备最多保存 8 条端口规则。") }
+        guard next.count <= DesktopPortLimits.rules else { throw CloudError(L10n.text("每台设备最多保存 8 条端口规则。")) }
         guard !next.contains(where: { $0.id != rule.id && $0.conflicts(with: rule) }) else {
-            throw CloudError("同一监听端的地址、协议和端口与已有规则冲突。")
+            throw CloudError(L10n.text("同一监听端的地址、协议和端口与已有规则冲突。"))
         }
         try store?.save(next)
         if let index = rules.firstIndex(where: { $0.id == rule.id }) { rules[index] = .init(rule: rule) }
@@ -162,8 +162,8 @@ final class DesktopPortForwarder: ObservableObject {
         if rule.isEnabled, canStart { try start(rule.id) }
     }
     func setEnabled(_ ruleID: UUID, _ enabled: Bool) throws {
-        guard canEdit, let index = rules.firstIndex(where: { $0.id == ruleID }) else { throw CloudError("映射规则无法修改。") }
-        guard rules[index].phase != .stopping else { throw CloudError("正在等待停止确认，请稍后重试。") }
+        guard canEdit, let index = rules.firstIndex(where: { $0.id == ruleID }) else { throw CloudError(L10n.text("映射规则无法修改。")) }
+        guard rules[index].phase != .stopping else { throw CloudError(L10n.text("正在等待停止确认，请稍后重试。")) }
         var next = rules.map(\.rule)
         next[index].isEnabled = enabled
         try store?.save(next)
@@ -173,7 +173,7 @@ final class DesktopPortForwarder: ObservableObject {
     }
     func remove(_ ruleID: UUID) throws {
         guard canEdit, let state = rules.first(where: { $0.id == ruleID }), !state.running else {
-            throw CloudError("请先停止这条规则，再删除。")
+            throw CloudError(L10n.text("请先停止这条规则，再删除。"))
         }
         try store?.save(rules.filter { $0.id != ruleID }.map(\.rule))
         rules.removeAll { $0.id == ruleID }
@@ -181,7 +181,7 @@ final class DesktopPortForwarder: ObservableObject {
     func start(_ ruleID: UUID) throws {
         guard canStart else { throw CloudError(statusText) }
         guard let state = rules.first(where: { $0.id == ruleID }), !state.running, state.rule.isValid else {
-            throw CloudError("规则不存在或尚未停止。")
+            throw CloudError(L10n.text("规则不存在或尚未停止。"))
         }
         let run = Run(id: UUID(), rule: state.rule, now: now())
         runs[run.id] = run
@@ -190,7 +190,7 @@ final class DesktopPortForwarder: ObservableObject {
     }
     func stop(_ ruleID: UUID) {
         guard let run = runs.values.first(where: { $0.rule.id == ruleID }) else { return }
-        if host { endHostRun(run, reason: "被控电脑已停止此规则。") }
+        if host { endHostRun(run, reason: L10n.text("被控电脑已停止此规则。")) }
         else { requestStop(run) }
     }
     private func requestStop(_ run: Run, failure: String? = nil) {
@@ -211,38 +211,38 @@ final class DesktopPortForwarder: ObservableObject {
     func receive(_ data: Data) {
         guard !closed else { return }
         do { try receive(DesktopPortPacket.decode(data)) }
-        catch { fail("端口转发协议错误：\(error.localizedDescription)") }
+        catch { fail(L10n.text("端口转发协议错误：\(error.localizedDescription)")) }
     }
     private func receive(_ packet: DesktopPortPacket) throws {
         switch packet.kind {
         case .status:
-            guard !host else { throw CloudError("对方不能修改本机授权。") }
+            guard !host else { throw CloudError(L10n.text("对方不能修改本机授权。")) }
             remoteAllowed = packet.allowed
-            if remoteAllowed == false { stopAll(reason: "对方未允许端口转发或已撤销授权。") }
+            if remoteAllowed == false { stopAll(reason: L10n.text("对方未允许端口转发或已撤销授权。")) }
             restoreEnabledRulesIfReady()
         case .startRule:
-            guard host, let id = packet.id, let rule = packet.rule else { throw CloudError("规则发起方向无效。") }
+            guard host, let id = packet.id, let rule = packet.rule else { throw CloudError(L10n.text("规则发起方向无效。")) }
             guard allowed(), channelOpen else {
-                enqueue(.init(kind: .ruleStopped, id: id, message: "被控电脑未允许端口转发。")); return
+                enqueue(.init(kind: .ruleStopped, id: id, message: L10n.text("被控电脑未允许端口转发。"))); return
             }
             guard runs.count < DesktopPortLimits.rules, runs[id] == nil,
                   !runs.values.contains(where: { $0.rule.id == rule.id || $0.rule.conflicts(with: rule) }) else {
-                enqueue(.init(kind: .ruleStopped, id: id, message: "规则数量已达上限或监听配置冲突。")); return
+                enqueue(.init(kind: .ruleStopped, id: id, message: L10n.text("规则数量已达上限或监听配置冲突。"))); return
             }
             let run = Run(id: id, rule: rule, now: now()); runs[id] = run
             if rule.direction.listenerIsHost { listen(run) }
             else { run.phase = .listening; enqueue(.init(kind: .ruleStarted, id: id)); syncSnapshots() }
         case .ruleStarted:
-            guard !host else { throw CloudError("规则确认方向无效。") }
+            guard !host else { throw CloudError(L10n.text("规则确认方向无效。")) }
             guard let id = packet.id, let run = runs[id], run.phase == .starting else { return }
             if run.rule.direction.listenerIsHost { run.phase = .listening; syncSnapshots() }
             else { listen(run) }
         case .stopRule:
-            guard host, let id = packet.id else { throw CloudError("停止请求方向无效。") }
+            guard host, let id = packet.id else { throw CloudError(L10n.text("停止请求方向无效。")) }
             if let run = runs[id] { endHostRun(run) }
             else { enqueue(.init(kind: .ruleStopped, id: id)) }
         case .ruleStopped:
-            guard !host else { throw CloudError("停止确认方向无效。") }
+            guard !host else { throw CloudError(L10n.text("停止确认方向无效。")) }
             guard let id = packet.id, let run = runs[id] else { return }
             cancelListener(run); closeStreams(run: run)
             let failed = run.phase == .starting || run.failure != nil
@@ -267,7 +267,7 @@ final class DesktopPortForwarder: ObservableObject {
         do {
             if run.rule.transport == .udp {
                 let listener = try DesktopPortUDPListener(address: run.rule.listenAddress, port: run.rule.listenPort)
-                guard listener.port == run.rule.listenPort else { listener.close(); throw CloudError("实际 UDP 监听端口与配置不一致。") }
+                guard listener.port == run.rule.listenPort else { listener.close(); throw CloudError(L10n.text("实际 UDP 监听端口与配置不一致。")) }
                 run.udpListener = listener
                 listener.onConnection = { [weak self, weak run] socket in
                     guard let self, let run, self.runs[run.id] === run, run.phase == .listening,
@@ -300,12 +300,12 @@ final class DesktopPortForwarder: ObservableObject {
                     guard let self, let run, self.runs[run.id] === run, run.listener === listener else { return }
                     switch state {
                     case .ready:
-                        guard listener.port == port else { self.listenerFailed(run, reason: "实际监听端口与配置不一致。"); return }
+                        guard listener.port == port else { self.listenerFailed(run, reason: L10n.text("实际监听端口与配置不一致。")); return }
                         run.phase = .listening
                         if self.host { self.enqueue(.init(kind: .ruleStarted, id: run.id)) }
                         self.syncSnapshots()
-                    case .failed(let error): self.listenerFailed(run, reason: "监听 \(run.rule.listener) 失败：\(error.localizedDescription)")
-                    case .waiting(let error): self.listenerFailed(run, reason: "监听 \(run.rule.listener) 不可用：\(error.localizedDescription)")
+                    case .failed(let error): self.listenerFailed(run, reason: L10n.text("监听 \(run.rule.listener) 失败：\(error.localizedDescription)"))
+                    case .waiting(let error): self.listenerFailed(run, reason: L10n.text("监听 \(run.rule.listener) 不可用：\(error.localizedDescription)"))
                     default: break
                     }
                 }
@@ -321,14 +321,14 @@ final class DesktopPortForwarder: ObservableObject {
                 }
             }
             listener.start(queue: .main)
-        } catch { listenerFailed(run, reason: "监听 \(run.rule.listener) 失败：\(error.localizedDescription)") }
+        } catch { listenerFailed(run, reason: L10n.text("监听 \(run.rule.listener) 失败：\(error.localizedDescription)")) }
     }
     private func listenerFailed(_ run: Run, reason: String) {
         if host { endHostRun(run, reason: reason) }
         else { requestStop(run, failure: reason) }
     }
     private func connectionLimit(_ run: Run) {
-        let message = "活动转发会话已达 32 个上限，已拒绝新会话。"
+        let message = L10n.text("活动转发会话已达 32 个上限，已拒绝新会话。")
         if run.failure != message { run.failure = message; syncSnapshots() }
     }
     private func cancelListener(_ run: Run) {
@@ -340,11 +340,11 @@ final class DesktopPortForwarder: ObservableObject {
     }
 
     private func acceptStream(_ packet: DesktopPortPacket) throws {
-        guard let id = packet.id, let runID = packet.runID else { throw CloudError("连接标识无效。") }
+        guard let id = packet.id, let runID = packet.runID else { throw CloudError(L10n.text("连接标识无效。")) }
         guard let run = runs[runID], run.phase == .listening,
               run.rule.direction.listenerIsHost != host, allowed(), host || remoteAllowed == true,
               streams[id] == nil, !retiredStreams.contains(id), streams.count < DesktopPortLimits.connections else {
-            enqueue(.init(kind: .close, id: id, message: "规则未启动、未获授权或连接数已达上限。")); return
+            enqueue(.init(kind: .close, id: id, message: L10n.text("规则未启动、未获授权或连接数已达上限。"))); return
         }
         let parameters: NWParameters = run.rule.transport == .tcp ? .tcp : .udp
         let socket = NWConnection(host: NWEndpoint.Host(run.rule.destinationHost),
@@ -360,13 +360,13 @@ final class DesktopPortForwarder: ObservableObject {
                 guard let self, let stream, self.streams[id] === stream else { return }
                 switch state {
                 case .ready:
-                    guard self.allowed() else { self.closeStream(stream, reason: "端口转发授权已失效。"); return }
+                    guard self.allowed() else { self.closeStream(stream, reason: L10n.text("端口转发授权已失效。")); return }
                     if stream.ready {
                         stream.terminalFailure = nil; stream.terminalDeadline = nil; self.pump(); return
                     }
                     if run.rule.transport == .udp {
                         do {
-                            guard let endpoint = socket.currentPath?.remoteEndpoint else { throw CloudError("UDP 目标尚未解析为明确地址。") }
+                            guard let endpoint = socket.currentPath?.remoteEndpoint else { throw CloudError(L10n.text("UDP 目标尚未解析为明确地址。")) }
                             let udp = try DesktopPortUDPSocket(target: DesktopPortUDPAddress(endpoint: endpoint))
                             stream.udpSocket = udp
                             udp.onError = { [weak self, weak stream] in if let stream { self?.closeStream(stream, reason: $0) } }
@@ -386,7 +386,7 @@ final class DesktopPortForwarder: ObservableObject {
                         // 由 receive 的 EOF / 错误确定读取结果，避免提前取消尚未交付的尾部字节。
                         stream.terminalFailure = error.localizedDescription; stream.terminalDeadline = self.now() + 10
                         self.pump()
-                    } else { self.closeStream(stream, reason: "目标连接状态异常：\(error.localizedDescription)") }
+                    } else { self.closeStream(stream, reason: L10n.text("目标连接状态异常：\(error.localizedDescription)")) }
                 default: break
                 }
             }
@@ -397,39 +397,39 @@ final class DesktopPortForwarder: ObservableObject {
     private func receive(_ packet: DesktopPortPacket, stream: Stream) throws {
         switch packet.kind {
         case .opened:
-            guard stream.initiator, !stream.ready else { throw CloudError("连接重复确认或方向无效。") }
+            guard stream.initiator, !stream.ready else { throw CloudError(L10n.text("连接重复确认或方向无效。")) }
             stream.ready = true; syncSnapshots(); pump()
         case .data:
-            guard stream.ready, stream.run.rule.transport == .tcp, !stream.peerEOF else { throw CloudError("TCP 数据不属于有效连接。") }
+            guard stream.ready, stream.run.rule.transport == .tcp, !stream.peerEOF else { throw CloudError(L10n.text("TCP 数据不属于有效连接。")) }
             let data = packet.payload!
             try reserveWrite(data.count, stream: stream)
             stream.writes.append(data); write(stream)
         case .datagram:
-            guard stream.ready, stream.run.rule.transport == .udp else { throw CloudError("UDP 数据不属于有效连接。") }
+            guard stream.ready, stream.run.rule.transport == .udp else { throw CloudError(L10n.text("UDP 数据不属于有效连接。")) }
             if stream.assembly.id == nil { try reserveWrite(max(1, packet.length!), stream: stream) }
             if let data = try stream.assembly.append(packet, now: now()) { stream.writes.append(data); write(stream) }
         case .ack:
             let bytes = packet.bytes!
-            guard let first = stream.outstanding.first, bytes == first.bytes else { throw CloudError("收到不匹配的转发确认。") }
+            guard let first = stream.outstanding.first, bytes == first.bytes else { throw CloudError(L10n.text("收到不匹配的转发确认。")) }
             stream.outstanding.removeFirst(); inFlightFrames -= first.frames
             stream.inFlight -= bytes; totalInFlight -= bytes
             stream.ackDeadline = stream.inFlight == 0 ? nil : now() + 30
             finishIfPossible(stream); pump()
         case .eof:
-            guard stream.run.rule.transport == .tcp, stream.ready, !stream.peerEOF else { throw CloudError("TCP 半关闭状态无效。") }
+            guard stream.run.rule.transport == .tcp, stream.ready, !stream.peerEOF else { throw CloudError(L10n.text("TCP 半关闭状态无效。")) }
             stream.peerEOF = true; write(stream)
         case .close:
             // 对端已发送 EOF 时，正常 close 不能抢在本机最后一次写入 / FIN 之前取消 TCP。
             if packet.message == nil, stream.run.rule.transport == .tcp, stream.readEOF, stream.peerEOF {
                 finishIfPossible(stream)
             } else { closeStream(stream, reason: packet.message, notify: false) }
-        default: throw CloudError("连接消息类型无效。")
+        default: throw CloudError(L10n.text("连接消息类型无效。"))
         }
     }
     private func reserveWrite(_ bytes: Int, stream: Stream) throws {
         guard stream.pendingWriteBytes + bytes <= DesktopPortLimits.streamWindow,
               pendingWrites + bytes <= DesktopPortLimits.totalWindow,
-              stream.pendingWriteMessages < 16, pendingWriteMessages < 64 else { throw CloudError("端口转发接收窗口已超限。") }
+              stream.pendingWriteMessages < 16, pendingWriteMessages < 64 else { throw CloudError(L10n.text("端口转发接收窗口已超限。")) }
         stream.pendingWriteBytes += bytes; pendingWrites += bytes; stream.lastActivity = now()
         stream.pendingWriteMessages += 1; pendingWriteMessages += 1
     }
@@ -439,7 +439,7 @@ final class DesktopPortForwarder: ObservableObject {
             stream.writing = true
             let complete: (String?) -> Void = { [weak self, weak stream] error in
                     guard let self, let stream, self.streams[stream.id] === stream else { return }
-                    if let error { self.closeStream(stream, reason: "写入目标失败：\(error)"); return }
+                    if let error { self.closeStream(stream, reason: L10n.text("写入目标失败：\(error)")); return }
                     stream.writes.removeFirst(); stream.writing = false
                     let credit = stream.run.rule.transport == .udp ? max(1, data.count) : data.count
                     stream.pendingWriteBytes -= credit; self.pendingWrites -= credit
@@ -453,14 +453,14 @@ final class DesktopPortForwarder: ObservableObject {
                 socket.send(content: data, completion: .contentProcessed { error in
                     MainActor.assumeIsolated { complete(error?.localizedDescription) }
                 })
-            } else { closeStream(stream, reason: "目标连接已关闭。") }
+            } else { closeStream(stream, reason: L10n.text("目标连接已关闭。")) }
         } else if stream.peerEOF, !stream.finalWriteStarted {
             stream.finalWriteStarted = true
             stream.socket?.send(content: nil, contentContext: .finalMessage, isComplete: true,
                 completion: .contentProcessed { [weak self, weak stream] error in
                     MainActor.assumeIsolated {
                         guard let self, let stream, self.streams[stream.id] === stream else { return }
-                        if let error { self.closeStream(stream, reason: "结束 TCP 写入失败：\(error.localizedDescription)"); return }
+                        if let error { self.closeStream(stream, reason: L10n.text("结束 TCP 写入失败：\(error.localizedDescription)")); return }
                         stream.finalWriteDone = true; self.finishIfPossible(stream)
                     }
                 })
@@ -513,7 +513,7 @@ final class DesktopPortForwarder: ObservableObject {
                 guard let self, let stream, self.streams[stream.id] === stream else { return }
                 stream.reading = false
                 if let error { self.closeStream(stream, reason: error); return }
-                guard let data else { self.closeStream(stream, reason: "UDP 消息读取失败。"); return }
+                guard let data else { self.closeStream(stream, reason: L10n.text("UDP 消息读取失败。")); return }
                 stream.pendingRead = data; self.pump()
             }
             return
@@ -523,10 +523,10 @@ final class DesktopPortForwarder: ObservableObject {
                 guard let self, let stream, self.streams[stream.id] === stream else { return }
                 stream.reading = false
                 if stream.run.rule.transport == .udp {
-                    self.closeStream(stream, reason: "UDP 会话缺少数据报套接字。"); return
+                    self.closeStream(stream, reason: L10n.text("UDP 会话缺少数据报套接字。")); return
                 } else {
                     if let data, !data.isEmpty { stream.pendingRead = data }
-                    if let error { stream.readFailure = "读取目标失败：\(error.localizedDescription)" }
+                    if let error { stream.readFailure = L10n.text("读取目标失败：\(error.localizedDescription)") }
                     else {
                         stream.pendingEOF = complete
                         if complete { stream.terminalFailure = nil; stream.terminalDeadline = nil }
@@ -562,19 +562,19 @@ final class DesktopPortForwarder: ObservableObject {
 
     func tick() {
         guard !closed else { return }
-        if !allowed(), !runs.isEmpty { stopAll(reason: "端口转发授权已失效或独立端口连接已中断。") }
+        if !allowed(), !runs.isEmpty { stopAll(reason: L10n.text("端口转发授权已失效或独立端口连接已中断。")) }
         let time = now()
         for run in Array(runs.values) where run.phase == .starting || run.phase == .stopping {
             if time > run.deadline {
-                fail(run.phase == .stopping ? "未收到停止确认，转发通道已关闭，请检查远端状态。" : "端口转发启动确认超时，通道已关闭，请重新连接设备。")
+                fail(run.phase == .stopping ? L10n.text("未收到停止确认，转发通道已关闭，请检查远端状态。") : L10n.text("端口转发启动确认超时，通道已关闭，请重新连接设备。"))
                 return
             }
         }
         for stream in Array(streams.values) {
-            if !stream.ready && time - stream.created > 10 { closeStream(stream, reason: "连接目标服务超时。") }
-            else if stream.ackDeadline.map({ time > $0 }) == true { closeStream(stream, reason: "等待转发数据写入确认超时。") }
+            if !stream.ready && time - stream.created > 10 { closeStream(stream, reason: L10n.text("连接目标服务超时。")) }
+            else if stream.ackDeadline.map({ time > $0 }) == true { closeStream(stream, reason: L10n.text("等待转发数据写入确认超时。")) }
             else if stream.terminalDeadline.map({ time > $0 }) == true { closeStream(stream, reason: stream.terminalFailure) }
-            else if stream.assembly.deadline.map({ time > $0 }) == true { closeStream(stream, reason: "UDP 数据报重组超时。") }
+            else if stream.assembly.deadline.map({ time > $0 }) == true { closeStream(stream, reason: L10n.text("UDP 数据报重组超时。")) }
             else if stream.run.rule.transport == .udp && time - stream.lastActivity > 60 { closeStream(stream) }
         }
         pump()
@@ -630,7 +630,7 @@ final class DesktopPortForwarder: ObservableObject {
         closed = true; channelOpen = false
         restartAfterStop.removeAll()
         maintenance?.cancel(); maintenance = nil
-        stopAll(reason: error ?? "独立端口连接已结束，转发已停止。")
+        stopAll(reason: error ?? L10n.text("独立端口连接已结束，转发已停止。"))
         outgoing.close()
         streams.removeAll(); streamOrder.removeAll(); totalInFlight = 0; pendingWrites = 0; pendingWriteMessages = 0; inFlightFrames = 0
     }

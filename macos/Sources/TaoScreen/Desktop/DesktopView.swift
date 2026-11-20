@@ -27,19 +27,19 @@ struct DesktopView: View {
             DesktopMessage(center: center)
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
-                    Text("同账号设备").font(.headline)
+                    Text(L10n.text("同账号设备")).font(.headline)
                     Text("\(devices.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         .padding(.horizontal, 7).padding(.vertical, 2).background(.quaternary, in: Capsule())
                     Spacer()
-                    Button { Task { await center.refresh() } } label: { Label("刷新", systemImage: "arrow.clockwise") }
-                        .buttonStyle(.borderless).controlSize(.small).disabled(!center.online).help("刷新设备列表")
+                    Button { Task { await center.refresh() } } label: { Label(L10n.text("刷新"), systemImage: "arrow.clockwise") }
+                        .buttonStyle(.borderless).controlSize(.small).disabled(!center.online).help(L10n.text("刷新设备列表"))
                 }
                 if !center.enabled {
-                    ContentUnavailableView("连接你的另一台 Mac", systemImage: "display.2",
-                        description: Text("在两台 Mac 上登录同一账户，并开启远程桌面。"))
+                    ContentUnavailableView(L10n.text("连接你的另一台 Mac"), systemImage: "display.2",
+                        description: Text(L10n.text("在两台 Mac 上登录同一账户，并开启远程桌面。")))
                 } else if devices.isEmpty {
-                    ContentUnavailableView("暂无在线设备", systemImage: "desktopcomputer",
-                        description: Text("在另一台 Mac 登录相同账户并开启远程桌面。设备列表会自动更新。"))
+                    ContentUnavailableView(L10n.text("暂无在线设备"), systemImage: "desktopcomputer",
+                        description: Text(L10n.text("在另一台 Mac 登录相同账户并开启远程桌面。设备列表会自动更新。")))
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 10) {
@@ -61,9 +61,9 @@ struct DesktopView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .desktopWorkspacePanel()
             if center.online && !center.relayAvailable {
-                Label("当前服务支持设备直连，部分跨网连接可能无法建立。", systemImage: "network")
+                Label(L10n.text("当前服务支持设备直连，部分跨网连接可能无法建立。"), systemImage: "network")
                     .font(.caption).foregroundStyle(.secondary)
-                    .help("当前服务未配置 TURN 中继：内网、Tailscale 或可打洞的网络可直连。")
+                    .help(L10n.text("当前服务未配置 TURN 中继：内网、Tailscale 或可打洞的网络可直连。"))
             }
         }
         .padding(.horizontal, 24).padding(.vertical, 18)
@@ -85,16 +85,16 @@ struct DesktopView: View {
                 .frame(width: 46, height: 46)
                 .background(DesktopWorkspaceStyle.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 5) {
-                Text("远程桌面").font(.system(size: 22, weight: .semibold))
+                Text(L10n.text("远程桌面")).font(.system(size: 22, weight: .semibold))
                 HStack(spacing: 6) {
                     Circle().fill(center.online ? Color.green : .secondary).frame(width: 6, height: 6)
                     Text(center.status).font(.callout).foregroundStyle(.secondary)
                 }
             }
             Spacer()
-            Button { center.portService.activateMappingWindow(); openWindow(id: "ports") } label: { Label("端口映射", systemImage: "arrow.left.arrow.right") }
+            Button { center.portService.activateMappingWindow(); openWindow(id: "ports") } label: { Label(L10n.text("端口映射"), systemImage: "arrow.left.arrow.right") }
                 .controlSize(.regular)
-            Toggle("开启远程桌面", isOn: $center.enabled).toggleStyle(.switch).font(.callout).fixedSize()
+            Toggle(L10n.text("开启远程桌面"), isOn: $center.enabled).toggleStyle(.switch).font(.callout).fixedSize()
         }
         .desktopWorkspacePanel()
     }
@@ -103,13 +103,13 @@ struct DesktopView: View {
         let missingPermissions = !center.permissions.snapshot.missing(control: true).isEmpty
         let unattendedMissing = center.unattended.enabled && !center.permissions.snapshot.missing(control: center.unattended.control).isEmpty
         return HStack(spacing: 0) {
-            DesktopSettingsShortcut(title: "访问权限", subtitle: permissionSummary,
+            DesktopSettingsShortcut(title: L10n.text("访问权限"), subtitle: permissionSummary,
                                     symbol: missingPermissions ? "exclamationmark.shield" : "lock.shield",
                                     warning: missingPermissions) {
                 settingsSheet = .permissions
             }
             Divider().frame(height: 28)
-            DesktopSettingsShortcut(title: "无人值守", subtitle: unattendedSummary,
+            DesktopSettingsShortcut(title: L10n.text("无人值守"), subtitle: unattendedSummary,
                                     symbol: "checkmark.shield", warning: unattendedMissing) {
                 settingsSheet = .unattended
             }.disabled(!center.canConfigureUnattended)
@@ -121,13 +121,13 @@ struct DesktopView: View {
 
     private var permissionSummary: String {
         let missing = center.permissions.snapshot.missing(control: true).count
-        return missing == 0 ? "此电脑权限已就绪" : "\(missing) 项权限待授权"
+        return missing == 0 ? L10n.text("此电脑权限已就绪") : L10n.text("\(missing) 项权限待授权")
     }
     private var unattendedSummary: String {
-        guard center.unattended.enabled else { return "每次连接时确认" }
-        if !center.enabled { return "已配置 · 待开启远程桌面" }
-        if !center.permissions.snapshot.missing(control: center.unattended.control).isEmpty { return "已配置 · 等待权限授权" }
-        return "已开启 · 免确认连接"
+        guard center.unattended.enabled else { return L10n.text("每次连接时确认") }
+        if !center.enabled { return L10n.text("已配置 · 待开启远程桌面") }
+        if !center.permissions.snapshot.missing(control: center.unattended.control).isEmpty { return L10n.text("已配置 · 等待权限授权") }
+        return L10n.text("已开启 · 免确认连接")
     }
 }
 
@@ -159,17 +159,17 @@ private struct DesktopPrivacyShortcut: View {
     let action: () -> Void
     private var summary: String {
         if center.isHost {
-            if center.privacyChanging { return "正在切换…" }
-            if !center.privacyStateKnown { return "本次共享状态未确认" }
-            if center.privacyPausedForLock { return "锁屏期间暂停" }
-            if center.privacyActive { return "本次共享已开启" }
-            if center.privacyRequested { return "已启用 · 等待显示" }
-            return "本次共享未开启"
+            if center.privacyChanging { return L10n.text("正在切换…") }
+            if !center.privacyStateKnown { return L10n.text("本次共享状态未确认") }
+            if center.privacyPausedForLock { return L10n.text("锁屏期间暂停") }
+            if center.privacyActive { return L10n.text("本次共享已开启") }
+            if center.privacyRequested { return L10n.text("已启用 · 等待显示") }
+            return L10n.text("本次共享未开启")
         }
-        return library.settings.automatic ? "连接时自动启用" : "连接时手动启用"
+        return library.settings.automatic ? L10n.text("连接时自动启用") : L10n.text("连接时手动启用")
     }
     var body: some View {
-        DesktopSettingsShortcut(title: "隐私屏", subtitle: summary, symbol: "lock.display", action: action)
+        DesktopSettingsShortcut(title: L10n.text("隐私屏"), subtitle: summary, symbol: "lock.display", action: action)
     }
 }
 
@@ -191,12 +191,12 @@ private struct DesktopAvailableCard: View {
             DesktopDeviceIcon()
             VStack(alignment: .leading, spacing: 5) {
                 Text(peer.name).font(.headline).lineLimit(1).help(peer.name)
-                Text("在线 · 可连接").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.text("在线 · 可连接")).font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
-            Button("端口映射") { portService.openMapping(for: peer); openWindow(id: "ports") }
+            Button(L10n.text("端口映射")) { portService.openMapping(for: peer); openWindow(id: "ports") }
                 .disabled(portService.settingsAccountID == nil)
-            Button("连接", action: connect).buttonStyle(.borderedProminent).disabled(!canConnect)
+            Button(L10n.text("连接"), action: connect).buttonStyle(.borderedProminent).disabled(!canConnect)
         }.controlSize(.small).padding(16)
             .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 12))
     }
@@ -213,23 +213,23 @@ private struct DesktopConnectedCard: View {
             HStack(spacing: 12) {
                 DesktopDeviceIcon()
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(center.peer?.name ?? "远程电脑").font(.headline).lineLimit(1)
-                        .help(center.peer?.name ?? "远程电脑")
+                    Text(center.peer?.name ?? L10n.text("远程电脑")).font(.headline).lineLimit(1)
+                        .help(center.peer?.name ?? L10n.text("远程电脑"))
                     Text(connectionSummary).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 }
                 Spacer(minLength: 12)
                 DesktopLatencyLabel(center: center)
                 if let peer = center.peer {
-                    Button("端口映射") { portService.openMapping(for: peer); openWindow(id: "ports") }
+                    Button(L10n.text("端口映射")) { portService.openMapping(for: peer); openWindow(id: "ports") }
                         .disabled(portService.settingsAccountID == nil)
                 }
                 if !center.isHost {
-                    Button("打开窗口") { center.showDesktopWindow() }.buttonStyle(.borderedProminent)
+                    Button(L10n.text("打开窗口")) { center.showDesktopWindow() }.buttonStyle(.borderedProminent)
                     Button { settingsPresented = true } label: { Image(systemName: "slider.horizontal.3") }
-                        .help("连接设置")
+                        .help(L10n.text("连接设置"))
                         .popover(isPresented: $settingsPresented) { DesktopViewerSettings(center: center) }
                 }
-                Button(center.isHost ? "停止共享" : "断开", role: .destructive) { center.disconnect() }
+                Button(center.isHost ? L10n.text("停止共享") : L10n.text("断开"), role: .destructive) { center.disconnect() }
             }
             DesktopFileStatus(center: center)
             DesktopFileReceipt(center: center)
@@ -238,8 +238,8 @@ private struct DesktopConnectedCard: View {
     }
     private var connectionSummary: String {
         guard center.connected else { return center.route }
-        let role = center.isHost ? "正在共享此电脑" : "已连接"
-        return "\(role) · \(center.route) · \(center.controlAllowed ? "允许控制" : "仅观看")"
+        let role = center.isHost ? L10n.text("正在共享此电脑") : L10n.text("已连接")
+        return "\(role) · \(center.route) · \(center.controlAllowed ? L10n.text("允许控制") : L10n.text("仅观看"))"
     }
 }
 
@@ -297,7 +297,7 @@ final class DesktopSessionWindow: NSObject, NSWindowDelegate {
     func updatePresentation() {
         guard let center else { return }
         let visible = window?.isVisible == true && window?.isMiniaturized == false
-        window?.title = "\(center.selectedViewer?.peer?.name ?? "远程桌面") · 远程桌面"
+        window?.title = L10n.text("\(center.selectedViewer?.peer?.name ?? L10n.text("远程桌面")) · 远程桌面")
         for viewer in center.viewerSessions {
             let selected = viewer.id == center.selectedViewerID
             viewer.setViewerPresented(selected && visible)
@@ -395,13 +395,13 @@ struct DesktopWorkspaceView: View {
                 if let selected = center.selectedViewer {
                     DesktopMacControls(center: selected, releaseFocus: center.desktopWindow.releaseKeyboardFocus)
                     Button { center.desktopWindow.releaseKeyboardFocus() } label: {
-                        Label(selected.remoteShortcutsActive ? "快捷键：远端" : "快捷键：本机", systemImage: "keyboard")
+                        Label(selected.remoteShortcutsActive ? L10n.text("快捷键：远端") : L10n.text("快捷键：本机"), systemImage: "keyboard")
                             .font(.caption.weight(.medium)).fixedSize()
                             .foregroundStyle(selected.remoteShortcutsActive ? Color.accentColor : .secondary)
                             .padding(.horizontal, 9).padding(.vertical, 5)
                             .background(selected.remoteShortcutsActive ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08), in: Capsule())
                     }.buttonStyle(.plain)
-                        .help("点击顶部释放远端焦点；选择被控电脑接收快捷键后，点击远程画面重新接管。⌃⌥Esc 随时释放。")
+                        .help(L10n.text("点击顶部释放远端焦点；选择被控电脑接收快捷键后，点击远程画面重新接管。⌃⌥Esc 随时释放。"))
                     DesktopInputModePicker(center: selected) {
                         center.desktopWindow.releaseKeyboardFocus()
                     }.frame(width: 184)
@@ -409,7 +409,7 @@ struct DesktopWorkspaceView: View {
                         center.desktopWindow.releaseKeyboardFocus()
                         selected.sendInput(.init(kind: "release")); settingsPresented.toggle()
                     } label: { Image(systemName: "slider.horizontal.3").frame(width: 28, height: 28) }
-                        .buttonStyle(.plain).help("连接设置")
+                        .buttonStyle(.plain).help(L10n.text("连接设置"))
                         .popover(isPresented: $settingsPresented) { DesktopViewerSettings(center: selected) }
                 }
             }.padding(.leading, 78).padding(.trailing, 10).frame(height: DesktopControlWindow.navigationHeight)
@@ -467,11 +467,11 @@ private struct DesktopInputModePicker: NSViewRepresentable {
     var willChange: () -> Void = {}
 
     func makeNSView(context: Context) -> NSSegmentedControl {
-        let control = NSSegmentedControl(labels: ["远端输入法", "本机输入法"], trackingMode: .selectOne,
+        let control = NSSegmentedControl(labels: [L10n.text("远端输入法"), L10n.text("本机输入法")], trackingMode: .selectOne,
                                          target: context.coordinator, action: #selector(Coordinator.selectMode(_:)))
         control.controlSize = .small
         control.setImage(NSImage(systemSymbolName: "mic", accessibilityDescription: nil), forSegment: 1)
-        control.setAccessibilityLabel("输入方式")
+        control.setAccessibilityLabel(L10n.text("输入方式"))
         return control
     }
 
@@ -479,8 +479,8 @@ private struct DesktopInputModePicker: NSViewRepresentable {
         context.coordinator.picker = self
         control.selectedSegment = center.localInputEnabled ? 1 : 0
         control.isEnabled = context.environment.isEnabled && center.controlAllowed && center.viewerControlEnabled && !center.remoteScreenLocked
-        control.toolTip = center.remoteScreenLocked ? "锁屏期间使用远端按键输入，解锁后可切换。" :
-            "远端输入法：将按键发送到被控电脑，使用被控电脑上的输入法。\n本机输入法：使用这台 Mac 的输入法打字或语音输入，确认后将文字填入远端输入框。\n切换后点击远端输入框继续输入。"
+        control.toolTip = center.remoteScreenLocked ? L10n.text("锁屏期间使用远端按键输入，解锁后可切换。") :
+            L10n.text("远端输入法：将按键发送到被控电脑，使用被控电脑上的输入法。\n本机输入法：使用这台 Mac 的输入法打字或语音输入，确认后将文字填入远端输入框。\n切换后点击远端输入框继续输入。")
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(picker: self) }
@@ -515,7 +515,7 @@ private struct DesktopSessionTab: View {
     var body: some View {
         HStack(spacing: 8) {
             Button(action: select) {
-                Text(center.peer?.name ?? "远程电脑").lineLimit(1)
+                Text(center.peer?.name ?? L10n.text("远程电脑")).lineLimit(1)
             }.buttonStyle(.plain)
             Button(action: showInfo) {
                 DesktopLatencyLabel(center: center, showsHelp: false)
@@ -523,7 +523,7 @@ private struct DesktopSessionTab: View {
                     .anchorPreference(key: DesktopConnectionAnchorKey.self, value: .bounds) { [center.id: $0] }
                     .onHover(perform: hover)
                     .onDisappear { hover(false) }
-            }.buttonStyle(.plain).help("悬停查看连接信息，移开后自动隐藏")
+            }.buttonStyle(.plain).help(L10n.text("悬停查看连接信息，移开后自动隐藏"))
         }.padding(.horizontal, 12).frame(height: 30)
             .background(selected ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
             .contentShape(Rectangle())
@@ -586,7 +586,7 @@ private struct DesktopSessionView: View {
                 RoundedRectangle(cornerRadius: 12).strokeBorder(.blue, style: StrokeStyle(lineWidth: 3, dash: [10, 6]))
                     .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(alignment: .top) {
-                        Label(center.dropSupported ? "松开以传输并拖入此处" : "松开以发送到远端下载目录", systemImage: "arrow.down.doc.fill")
+                        Label(center.dropSupported ? L10n.text("松开以传输并拖入此处") : L10n.text("松开以发送到远端下载目录"), systemImage: "arrow.down.doc.fill")
                             .font(.callout.weight(.medium)).padding(12).background(.regularMaterial, in: Capsule()).padding(20)
                     }.padding(8).allowsHitTesting(false)
             }
@@ -619,13 +619,13 @@ struct DesktopTransferHUD: View {
     }
     private var title: String {
         switch state.phase {
-        case .preparing: return "准备传输"
-        case .sending: return "正在发送文件"
-        case .delivering: return "等待远端确认"
-        case .completed: return "传输完成"
-        case .warning: return "文件已保存 · 需要确认"
-        case .failed: return "传输未完成"
-        case .cancelled: return "已取消传输"
+        case .preparing: return L10n.text("准备传输")
+        case .sending: return L10n.text("正在发送文件")
+        case .delivering: return L10n.text("等待远端确认")
+        case .completed: return L10n.text("传输完成")
+        case .warning: return L10n.text("文件已保存 · 需要确认")
+        case .failed: return L10n.text("传输未完成")
+        case .cancelled: return L10n.text("已取消传输")
         }
     }
     var body: some View {
@@ -637,9 +637,9 @@ struct DesktopTransferHUD: View {
                 Text(title).font(.headline)
                 Spacer()
                 if state.active {
-                    Button("取消", action: cancel).controlSize(.small)
+                    Button(L10n.text("取消"), action: cancel).controlSize(.small)
                 } else {
-                    Button(action: dismiss) { Image(systemName: "xmark") }.buttonStyle(.plain).help("关闭传输状态")
+                    Button(action: dismiss) { Image(systemName: "xmark") }.buttonStyle(.plain).help(L10n.text("关闭传输状态"))
                 }
             }
             Text(state.message).font(.callout).lineLimit(3).truncationMode(.middle).textSelection(.enabled)
@@ -652,7 +652,7 @@ struct DesktopTransferHUD: View {
                             }
                     }.frame(height: 6)
                         .animation(reduceMotion ? nil : .linear(duration: 0.15), value: progress)
-                        .accessibilityLabel("文件传输进度")
+                        .accessibilityLabel(L10n.text("文件传输进度"))
                         .accessibilityValue(Text(progress, format: .percent.precision(.fractionLength(0))))
                 } else {
                     HStack(spacing: 8) {
@@ -663,7 +663,7 @@ struct DesktopTransferHUD: View {
                                 .stroke(tint, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                                 .rotationEffect(.degrees(turn * 360))
                         }.frame(width: 14, height: 14).accessibilityHidden(true)
-                        Text(state.phase == .preparing ? "正在读取文件与目标信息" : "正在校验和处理文件，请稍候")
+                        Text(state.phase == .preparing ? L10n.text("正在读取文件与目标信息") : L10n.text("正在校验和处理文件，请稍候"))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -676,14 +676,14 @@ struct DesktopTransferHUD: View {
                             Spacer(minLength: 4)
                             if let progress = state.progress { Text(progress, format: .percent.precision(.fractionLength(0))) }
                         } else {
-                            Text("已等待 \(max(0, Int(context.date.timeIntervalSince(state.updatedAt)))) 秒")
+                            Text(L10n.text("已等待 \(max(0, Int(context.date.timeIntervalSince(state.updatedAt)))) 秒"))
                         }
                     }.font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     if state.phase == .sending {
                         HStack {
-                            Text("第 \(max(1, state.fileIndex)) / \(state.fileCount) 个文件")
+                            Text(L10n.text("第 \(max(1, state.fileIndex)) / \(state.fileCount) 个文件"))
                             Spacer()
-                            Text(waiting ? "等待远端响应…" : "\(ByteCountFormatter.string(fromByteCount: Int64(Double(state.bytes) / elapsed), countStyle: .file))/秒")
+                            Text(waiting ? L10n.text("等待远端响应…") : L10n.text("\(ByteCountFormatter.string(fromByteCount: Int64(Double(state.bytes) / elapsed), countStyle: .file))/秒"))
                         }.font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -692,9 +692,9 @@ struct DesktopTransferHUD: View {
                 }
             } else if !state.paths.isEmpty {
                 HStack {
-                    Text("远端暂存文件保留 7 天").font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.text("远端暂存文件保留 7 天")).font(.caption).foregroundStyle(.secondary)
                     Spacer()
-                    Button("复制远端路径") {
+                    Button(L10n.text("复制远端路径")) {
                         guard let text = DesktopDropStorage.shellPaths(state.paths) else { return }
                         NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string)
                     }.controlSize(.small)
@@ -728,9 +728,9 @@ struct DesktopViewerSettings: View {
             }
             Divider()
             HStack {
-                Button("发送文件…") { center.chooseFiles() }.disabled(!center.canSendFiles)
+                Button(L10n.text("发送文件…")) { center.chooseFiles() }.disabled(!center.canSendFiles)
                 Spacer()
-                Button("断开连接", role: .destructive) { center.disconnect() }
+                Button(L10n.text("断开连接"), role: .destructive) { center.disconnect() }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -748,10 +748,10 @@ struct DesktopViewerSettings: View {
                 .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(center.peer?.name ?? "连接设置")
+                Text(center.peer?.name ?? L10n.text("连接设置"))
                     .font(.headline)
                     .lineLimit(1)
-                    .help(center.peer?.name ?? "连接设置")
+                    .help(center.peer?.name ?? L10n.text("连接设置"))
                     .accessibilityAddTraits(.isHeader)
                 Text(center.route).font(.caption).foregroundStyle(.secondary)
             }
@@ -762,32 +762,32 @@ struct DesktopViewerSettings: View {
     }
 
     private var inputSettings: some View {
-        section("控制与输入") {
-            row("鼠标键盘", symbol: "keyboard") {
-                Toggle("鼠标键盘", isOn: $center.viewerControlEnabled)
+        section(L10n.text("控制与输入")) {
+            row(L10n.text("鼠标键盘"), symbol: "keyboard") {
+                Toggle(L10n.text("鼠标键盘"), isOn: $center.viewerControlEnabled)
                     .disabled(!center.controlAllowed)
             }
             Divider()
-            row("快捷键接收端", symbol: "command") {
-                Picker("快捷键接收端", selection: Binding(get: { center.shortcutDestination }, set: { center.setShortcutDestination($0) })) {
+            row(L10n.text("快捷键接收端"), symbol: "command") {
+                Picker(L10n.text("快捷键接收端"), selection: Binding(get: { center.shortcutDestination }, set: { center.setShortcutDestination($0) })) {
                     ForEach(DesktopShortcutDestination.allCases, id: \.self) { Text($0.title).tag($0) }
                 }.disabled(!center.controlAllowed || !center.viewerControlEnabled)
             } details: {
-                Text("选择被控电脑后，仅在此连接画面获得键盘焦点时接管快捷键。⌃⌥Esc 随时释放键盘；点击画面可重新接管。")
+                Text(L10n.text("选择被控电脑后，仅在此连接画面获得键盘焦点时接管快捷键。⌃⌥Esc 随时释放键盘；点击画面可重新接管。"))
                 if let error = center.shortcutCaptureError { Text(error).foregroundStyle(.orange) }
             }
             if !center.restrictedDirectSession {
                 Divider()
-                row("同步剪贴板", symbol: "clipboard") {
-                    Toggle("同步剪贴板", isOn: $center.clipboardEnabled).disabled(!center.controlAllowed)
+                row(L10n.text("同步剪贴板"), symbol: "clipboard") {
+                    Toggle(L10n.text("同步剪贴板"), isOn: $center.clipboardEnabled).disabled(!center.controlAllowed)
                 } details: {
-                    Text(!center.clipboardEnabled ? "同步已关闭，⌘V 使用远端剪贴板。" : center.clipboardSupported
-                         ? "当前活动连接同步新复制的文本；⌘V 使用最近复制的来源。远端文件和图片在远端粘贴，本机文件通过 ⌘V 上传。"
-                         : "对方版本尚未声明剪贴板同步能力；⌘V 使用远端剪贴板，需要时可点击「粘贴本机内容」。")
+                    Text(!center.clipboardEnabled ? L10n.text("同步已关闭，⌘V 使用远端剪贴板。") : center.clipboardSupported
+                         ? L10n.text("当前活动连接同步新复制的文本；⌘V 使用最近复制的来源。远端文件和图片在远端粘贴，本机文件通过 ⌘V 上传。")
+                         : L10n.text("对方版本尚未声明剪贴板同步能力；⌘V 使用远端剪贴板，需要时可点击「粘贴本机内容」。"))
                     HStack(spacing: 8) {
-                        Button("粘贴本机内容") { center.pasteClipboard() }
+                        Button(L10n.text("粘贴本机内容")) { center.pasteClipboard() }
                             .disabled(!center.connected || !center.controlAllowed || !center.viewerControlEnabled || !center.clipboardEnabled || center.remoteScreenLocked)
-                        Button("粘贴远端内容") { center.pasteRemoteClipboard() }
+                        Button(L10n.text("粘贴远端内容")) { center.pasteRemoteClipboard() }
                             .disabled(!center.connected || !center.controlAllowed || !center.viewerControlEnabled)
                     }.buttonStyle(.bordered)
                 }
@@ -796,35 +796,35 @@ struct DesktopViewerSettings: View {
     }
 
     private var displaySettings: some View {
-        section("画面与声音") {
+        section(L10n.text("画面与声音")) {
             if !center.isHost {
                 videoSettings
                 Divider()
             }
-            row("光标", symbol: "cursorarrow") {
-                Picker("光标", selection: $center.cursorMode) {
+            row(L10n.text("光标"), symbol: "cursorarrow") {
+                Picker(L10n.text("光标"), selection: $center.cursorMode) {
                     ForEach(DesktopCursorMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }.disabled(!center.controlAllowed || !center.cursorSupported)
             }
             Divider()
-            row("被控电脑隐私屏", symbol: "lock.display") {
-                Toggle("被控电脑隐私屏", isOn: Binding(get: { center.privacyRequested }, set: { center.requestPrivacy($0) }))
+            row(L10n.text("被控电脑隐私屏"), symbol: "lock.display") {
+                Toggle(L10n.text("被控电脑隐私屏"), isOn: Binding(get: { center.privacyRequested }, set: { center.requestPrivacy($0) }))
                     .disabled(!center.connected || !center.controlAllowed || !center.privacySupported || center.privacyChanging)
             } details: {
-                Text(center.privacySupported ? center.privacyStatusText : "对方版本尚未声明支持隐私屏")
+                Text(center.privacySupported ? center.privacyStatusText : L10n.text("对方版本尚未声明支持隐私屏"))
             }
             if center.audioAllowed {
                 Divider()
-                row("静音", symbol: "speaker.slash") {
-                    Toggle("静音", isOn: $center.muted)
+                row(L10n.text("静音"), symbol: "speaker.slash") {
+                    Toggle(L10n.text("静音"), isOn: $center.muted)
                 }
             }
         }
     }
 
     private var videoSettings: some View {
-        row("画质选择", symbol: "display") {
-            Picker("画质选择", selection: Binding(get: { center.videoSelection.selectedPreset },
+        row(L10n.text("画质选择"), symbol: "display") {
+            Picker(L10n.text("画质选择"), selection: Binding(get: { center.videoSelection.selectedPreset },
                 set: { center.requestVideoPreset($0) })) {
                 ForEach(DesktopVideoPreset.allCases, id: \.self) { Text($0.title).tag($0) }
             }
@@ -840,7 +840,7 @@ struct DesktopViewerSettings: View {
                     .foregroundStyle(center.videoSelection.failure == nil ? Color.secondary : .orange)
                 if center.videoSelection.failure != nil {
                     if let format = center.videoSelection.confirmed { Text(format.description) }
-                    Button("重试画面设置") {
+                    Button(L10n.text("重试画面设置")) {
                         center.requestVideoPreset(center.videoSelection.retryPreset ?? center.videoSelection.selectedPreset)
                     }
                     .disabled(!center.connected)
@@ -850,11 +850,11 @@ struct DesktopViewerSettings: View {
     }
 
     private var securitySettings: some View {
-        section("安全") {
+        section(L10n.text("安全")) {
             DisclosureGroup(isExpanded: $securityExpanded) {
                 DesktopRemoteSecuritySettings(center: center).padding(.top, 8)
             } label: {
-                rowLabel("登录密码与断连锁屏", symbol: "key")
+                rowLabel(L10n.text("登录密码与断连锁屏"), symbol: "key")
             }
             .toggleStyle(.switch)
             .padding(.horizontal, 10)
@@ -909,11 +909,11 @@ private struct DesktopMessage: View {
     @ObservedObject var center: DesktopCenter
     var body: some View {
         if center.signalRecovering {
-            Label("信令正在恢复，暂时保留桌面连接，最长等待一分钟。", systemImage: "arrow.triangle.2.circlepath")
+            Label(L10n.text("信令正在恢复，暂时保留桌面连接，最长等待一分钟。"), systemImage: "arrow.triangle.2.circlepath")
                 .font(.callout).foregroundStyle(.orange)
         }
         if let message = center.message {
-            HStack { Text(message).font(.callout); Spacer(); Button("关闭") { center.message = nil } }
+            HStack { Text(message).font(.callout); Spacer(); Button(L10n.text("关闭")) { center.message = nil } }
                 .padding(10).background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -928,7 +928,7 @@ private struct DesktopFileStatus: View {
                 if let progress = center.fileProgress {
                     ProgressView(value: progress).frame(width: 100)
                     Text(progress, format: .percent.precision(.fractionLength(0))).font(.caption.monospacedDigit())
-                    Button("取消") { center.cancelFileTransfer() }.controlSize(.small)
+                    Button(L10n.text("取消")) { center.cancelFileTransfer() }.controlSize(.small)
                 }
                 Spacer(minLength: 0)
             }
@@ -948,16 +948,16 @@ private struct DesktopFileReceipt: View {
                     Spacer(minLength: 0)
                     if center.fileReceiveProgress == nil {
                         Button(action: center.dismissFileReceipt) { Image(systemName: "xmark") }
-                            .buttonStyle(.borderless).help("关闭接收状态")
+                            .buttonStyle(.borderless).help(L10n.text("关闭接收状态"))
                     }
                 }
                 if let progress = center.fileReceiveProgress {
                     HStack {
-                        ProgressView(value: progress).accessibilityLabel("文件接收进度")
+                        ProgressView(value: progress).accessibilityLabel(L10n.text("文件接收进度"))
                         Text(progress, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                     }
                 } else if let folder = center.receivedFileFolder {
-                    Button("在访达中显示") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+                    Button(L10n.text("在访达中显示")) { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
                 }
             }.font(.callout).controlSize(.small)
         }
@@ -972,16 +972,16 @@ private struct DesktopLatencyLabel: View {
     }
     var body: some View {
         if showsHelp {
-            label.help("链路质量：\(quality.rawValue)。按实际 RTT 分档：低于 80 ms 良好，80–199 ms 一般，200 ms 及以上较差；每 2 秒刷新，不代表 Wi-Fi 信号强度或画面显示延迟。")
+            label.help(L10n.text("链路质量：\(quality.title)。按实际 RTT 分档：低于 80 ms 良好，80–199 ms 一般，200 ms 及以上较差；每 2 秒刷新，不代表 Wi-Fi 信号强度或画面显示延迟。"))
         } else { label }
     }
     private var label: some View {
         HStack(spacing: 4) {
             Image(systemName: quality.symbol)
                 .foregroundStyle(quality == .good ? Color.green : quality == .unknown ? .secondary : .orange)
-            Text(center.connected ? center.latencyMilliseconds.map { "\($0.formatted(.number.precision(.fractionLength(0)))) ms" } ?? "— ms" : "连接中")
+            Text(center.connected ? center.latencyMilliseconds.map { "\($0.formatted(.number.precision(.fractionLength(0)))) ms" } ?? "— ms" : L10n.text("连接中"))
         }.font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-            .accessibilityLabel("连接质量\(quality.rawValue)")
+            .accessibilityLabel(L10n.text("连接质量\(quality.title)"))
     }
 }
 
@@ -993,22 +993,22 @@ struct DesktopConnectionInfo: View {
         .init(milliseconds: center.connected ? center.latencyMilliseconds : nil)
     }
     private var status: String {
-        if center.signalRecovering { return "信令恢复中" }
-        if center.connected { return "已连接" }
-        return center.sessionEstablished ? "连接恢复中" : "正在连接"
+        if center.signalRecovering { return L10n.text("信令恢复中") }
+        if center.connected { return L10n.text("已连接") }
+        return center.sessionEstablished ? L10n.text("连接恢复中") : L10n.text("正在连接")
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "display.2").foregroundStyle(.white.opacity(0.7))
-                Text(center.peer?.name ?? "远程电脑").fontWeight(.semibold).lineLimit(1)
+                Text(center.peer?.name ?? L10n.text("远程电脑")).fontWeight(.semibold).lineLimit(1)
                 Spacer(minLength: 4)
                 Circle().fill(center.connected && !center.signalRecovering ? Color.green : .orange)
                     .frame(width: 6, height: 6)
                 Text(status).font(.system(size: 11)).foregroundStyle(.white.opacity(0.7))
                 if let close {
                     Button(action: close) { Image(systemName: "xmark").frame(width: 20, height: 20) }
-                        .buttonStyle(.plain).accessibilityLabel("关闭连接信息")
+                        .buttonStyle(.plain).accessibilityLabel(L10n.text("关闭连接信息"))
                 }
             }
             Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
@@ -1016,21 +1016,21 @@ struct DesktopConnectionInfo: View {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(spacing: 8) {
                         TimelineView(.periodic(from: .now, by: 1)) { _ in
-                            row("连接时长", DesktopConnectionTiming.durationText(center.connectionTiming.elapsed()))
+                            row(L10n.text("连接时长"), DesktopConnectionTiming.durationText(center.connectionTiming.elapsed()))
                         }
                         if let start = center.connectionTiming.startedAt {
-                            row("开始时间", start.formatted(date: .abbreviated, time: .standard))
+                            row(L10n.text("开始时间"), start.formatted(date: .abbreviated, time: .standard))
                         }
-                        row("连接方式", center.route)
-                        row("控制端 IP", (center.isHost ? center.connectionAddresses.remote : center.connectionAddresses.local)?.description ?? "未获取")
-                        row("被控端 IP", (center.isHost ? center.connectionAddresses.local : center.connectionAddresses.remote)?.description ?? "未获取")
-                        row("往返延迟", center.connected ? center.latencyMilliseconds.map {
-                            "\($0.formatted(.number.precision(.fractionLength(0)))) ms · \(quality.rawValue)"
-                        } ?? "测量中" : "—")
-                        row("控制权限", center.controlAllowed ? (center.viewerControlEnabled ? "允许控制" : "已暂停控制") : "仅观看")
-                        row("系统声音", center.audioAllowed ? (center.muted ? "已静音" : "已开启") : "未共享")
+                        row(L10n.text("连接方式"), center.route)
+                        row(L10n.text("控制端 IP"), (center.isHost ? center.connectionAddresses.remote : center.connectionAddresses.local)?.description ?? L10n.text("未获取"))
+                        row(L10n.text("被控端 IP"), (center.isHost ? center.connectionAddresses.local : center.connectionAddresses.remote)?.description ?? L10n.text("未获取"))
+                        row(L10n.text("往返延迟"), center.connected ? center.latencyMilliseconds.map {
+                            "\($0.formatted(.number.precision(.fractionLength(0)))) ms · \(quality.title)"
+                        } ?? L10n.text("测量中") : "—")
+                        row(L10n.text("控制权限"), center.controlAllowed ? (center.viewerControlEnabled ? L10n.text("允许控制") : L10n.text("已暂停控制")) : L10n.text("仅观看"))
+                        row(L10n.text("系统声音"), center.audioAllowed ? (center.muted ? L10n.text("已静音") : L10n.text("已开启")) : L10n.text("未共享"))
                     }
-                    Text("连接地址与延迟每 2 秒刷新；中继时显示中继节点 IP。")
+                    Text(L10n.text("连接地址与延迟每 2 秒刷新；中继时显示中继节点 IP。"))
                         .font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
                 }
             }
@@ -1067,20 +1067,20 @@ private struct DesktopUnattendedSettingsView: View {
 
     var body: some View {
         ScrollView { VStack(alignment: .leading, spacing: 18) {
-            Label("此电脑的无人值守设置", systemImage: "checkmark.shield").font(.title2.bold())
-            Toggle("允许同账号设备免确认连接此电脑", isOn: $settings.enabled)
-            Text("设置仅对本机当前 TaoScreen 账号生效。开启后，同账号设备可直接查看所选屏幕，并使用下方允许的功能。")
+            Label(L10n.text("此电脑的无人值守设置"), systemImage: "checkmark.shield").font(.title2.bold())
+            Toggle(L10n.text("允许同账号设备免确认连接此电脑"), isOn: $settings.enabled)
+            Text(L10n.text("设置仅对本机当前 TaoScreen 账号生效。开启后，同账号设备可直接查看所选屏幕，并使用下方允许的功能。"))
                 .font(.callout).foregroundStyle(.secondary)
             Group {
                 DesktopShareDisplayPicker(center: center, selection: $settings.shareDisplay)
-                Toggle("允许鼠标键盘控制、粘贴文本和接收文件", isOn: $settings.control)
-                Toggle("共享系统声音", isOn: $settings.audio)
+                Toggle(L10n.text("允许鼠标键盘控制、粘贴文本和接收文件"), isOn: $settings.control)
+                Toggle(L10n.text("共享系统声音"), isOn: $settings.audio)
             }.disabled(!settings.enabled)
             DesktopPermissionSection(permissions: center.permissions, control: settings.control, restart: center.restartForPermissions)
-            Text("首次启用需在本机授予屏幕录制权限，允许控制还需辅助功能权限。开机后需先登录并启动 TaoScreen。休眠、退出登录或切换用户会停止共享。")
+            Text(L10n.text("首次启用需在本机授予屏幕录制权限，允许控制还需辅助功能权限。开机后需先登录并启动 TaoScreen。休眠、退出登录或切换用户会停止共享。"))
                 .font(.caption).foregroundStyle(.secondary)
             if settings.shareDisplay.virtualPreset == nil {
-                Text("TaoScreen 保持运行时，锁屏后仍可连接。允许控制时可在远程画面输入该 Mac 的密码解锁。")
+                Text(L10n.text("TaoScreen 保持运行时，锁屏后仍可连接。允许控制时可在远程画面输入该 Mac 的密码解锁。"))
                     .font(.caption).foregroundStyle(.secondary)
             }
             if let message = center.message {
@@ -1088,8 +1088,8 @@ private struct DesktopUnattendedSettingsView: View {
             }
             HStack {
                 Spacer()
-                Button("取消", role: .cancel) { dismiss() }
-                Button("保存") {
+                Button(L10n.text("取消"), role: .cancel) { dismiss() }
+                Button(L10n.text("保存")) {
                     if center.updateUnattended(settings, for: accountID) { dismiss() }
                 }.buttonStyle(.borderedProminent).disabled(!center.canConfigureUnattended)
             }
@@ -1106,18 +1106,18 @@ struct DesktopGlobalStatus: View {
         Group {
             if let invitation = center.invitation {
                 HStack {
-                    Label("\(invitation.peer.name) 请求连接此电脑", systemImage: "display.2")
+                    Label(L10n.text("\(invitation.peer.name) 请求连接此电脑"), systemImage: "display.2")
                     Spacer()
-                    Button("拒绝") { center.reject() }
-                    Button("查看请求…") { showInvitation = true }.buttonStyle(.borderedProminent)
+                    Button(L10n.text("拒绝")) { center.reject() }
+                    Button(L10n.text("查看请求…")) { showInvitation = true }.buttonStyle(.borderedProminent)
                 }.padding(10).background(.blue.opacity(0.12))
             } else if center.isHost, let peer = center.peer {
                 HStack {
-                    Label("正在向 \(peer.name) 共享\(center.sharedScreenName) · \(center.controlAllowed ? "允许控制" : "仅观看")", systemImage: "record.circle")
+                    Label(L10n.text("正在向 \(peer.name) 共享\(center.sharedScreenName) · \(center.controlAllowed ? L10n.text("允许控制") : L10n.text("仅观看"))"), systemImage: "record.circle")
                         .foregroundStyle(.red)
                     Spacer()
                     DesktopLatencyLabel(center: center)
-                    Button("停止共享", role: .destructive) { center.disconnect() }
+                    Button(L10n.text("停止共享"), role: .destructive) { center.disconnect() }
                 }.padding(10).background(.red.opacity(0.10))
             }
         }
@@ -1144,47 +1144,47 @@ private struct DesktopConsentView: View {
     var body: some View {
         let missing = center.permissions.snapshot.missing(control: control)
         return ScrollView { VStack(alignment: .leading, spacing: 18) {
-            Label("远程桌面请求", systemImage: "display.2").font(.title2.bold())
-            Text("\(center.invitation?.peer.name ?? "远程设备") 希望查看这台电脑。共享期间，对方可看到所选屏幕中的全部内容。")
+            Label(L10n.text("远程桌面请求"), systemImage: "display.2").font(.title2.bold())
+            Text(L10n.text("\(center.invitation?.peer.name ?? L10n.text("远程设备")) 希望查看这台电脑。共享期间，对方可看到所选屏幕中的全部内容。"))
             if !missing.isEmpty {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    Text("还需授予「\(missing.map(\.title).joined(separator: "」、「"))」才能接受本次共享。")
+                    Text(L10n.text("还需授予「\(missing.map(\.title).joined(separator: "」、「"))」才能接受本次共享。"))
                         .font(.callout).fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                 .background(.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
             }
             if center.isDirect {
-                Text("这台设备使用了本次直连的连接密码或连接码。请确认设备是你刚刚发送的对象。")
+                Text(L10n.text("这台设备使用了本次直连的连接密码或连接码。请确认设备是你刚刚发送的对象。"))
                     .font(.caption).foregroundStyle(.secondary)
             }
             DesktopShareDisplayPicker(center: center, selection: $display)
-            Toggle("允许鼠标键盘控制、粘贴文本和接收文件", isOn: $control)
-            Toggle("共享系统声音", isOn: $sound)
+            Toggle(L10n.text("允许鼠标键盘控制、粘贴文本和接收文件"), isOn: $control)
+            Toggle(L10n.text("共享系统声音"), isOn: $sound)
             if center.canRememberDirectDevice {
-                Toggle("记为可信设备", isOn: $rememberDirectDevice)
-                Text("记住设备身份。无人值守权限可稍后在「可信设备」中授权。")
+                Toggle(L10n.text("记为可信设备"), isOn: $rememberDirectDevice)
+                Text(L10n.text("记住设备身份。无人值守权限可稍后在「可信设备」中授权。"))
                     .font(.caption).foregroundStyle(.secondary)
             }
             DesktopPermissionSection(permissions: center.permissions, control: control, restart: center.restartForPermissions)
-            Text("本次请求约一分钟内有效。权限不足时可先在此电脑授权；如果请求已过期或需要重启，请让对方重新发起连接。")
+            Text(L10n.text("本次请求约一分钟内有效。权限不足时可先在此电脑授权；如果请求已过期或需要重启，请让对方重新发起连接。"))
                 .font(.caption).foregroundStyle(.secondary)
             if let message = center.message { Text(message).font(.callout).foregroundStyle(.orange) }
-            Text("仅授权这一次连接。共享期间会保持显示器唤醒。休眠、退出登录或切换用户会停止共享。")
+            Text(L10n.text("仅授权这一次连接。共享期间会保持显示器唤醒。休眠、退出登录或切换用户会停止共享。"))
                 .font(.caption).foregroundStyle(.secondary)
             if display.virtualPreset == nil {
-                Text("锁屏后连接会保留。允许控制时可远程输入该 Mac 的密码解锁。")
+                Text(L10n.text("锁屏后连接会保留。允许控制时可远程输入该 Mac 的密码解锁。"))
                     .font(.caption).foregroundStyle(.secondary)
             }
             HStack {
                 if !missing.isEmpty {
-                    Text("缺少\(missing.map { $0 == .screenRecording ? "录屏" : "辅助功能" }.joined(separator: "、"))权限")
+                    Text(L10n.text("缺少\(missing.map { $0 == .screenRecording ? L10n.text("录屏") : L10n.text("辅助功能") }.joined(separator: "、"))权限"))
                         .font(.caption).foregroundStyle(.orange)
                 }
                 Spacer()
-                Button("拒绝", role: .cancel) { center.reject(); dismiss() }
-                Button("接受并共享") {
+                Button(L10n.text("拒绝"), role: .cancel) { center.reject(); dismiss() }
+                Button(L10n.text("接受并共享")) {
                     Task { await center.accept(display: display, control: control, audio: sound, rememberDirectDevice: rememberDirectDevice) }
                 }.buttonStyle(.borderedProminent)
                     .disabled(center.invitation == nil || !missing.isEmpty)
@@ -1412,7 +1412,7 @@ final class DesktopVideoNSView: NSView, RTCVideoViewDelegate, NSTextInputClient 
                         DispatchQueue.main.async { [weak view] in
                             guard let view, !view.keyboardFocusRequested else { return }
                             view.releaseKeyboardFocus()
-                            view.shortcutFailure?("快捷键接管已被系统停用，请重新点击画面尝试接管。")
+                            view.shortcutFailure?(L10n.text("快捷键接管已被系统停用，请重新点击画面尝试接管。"))
                         }
                         return Unmanaged.passUnretained(event)
                     }
@@ -1421,13 +1421,13 @@ final class DesktopVideoNSView: NSView, RTCVideoViewDelegate, NSTextInputClient 
                 }
             }, userInfo: Unmanaged.passUnretained(self).toOpaque()) else {
             releaseKeyboardFocus()
-            shortcutFailure?("无法接管系统快捷键。请检查此 Mac 的辅助功能权限；当前系统快捷键仍由此电脑响应。")
+            shortcutFailure?(L10n.text("无法接管系统快捷键。请检查此 Mac 的辅助功能权限；当前系统快捷键仍由此电脑响应。"))
             return
         }
         guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
             CFMachPortInvalidate(tap)
             releaseKeyboardFocus()
-            shortcutFailure?("无法创建快捷键监听，请重新点击画面重试。")
+            shortcutFailure?(L10n.text("无法创建快捷键监听，请重新点击画面重试。"))
             return
         }
         keyboardTap = tap; keyboardSource = source
@@ -1696,7 +1696,7 @@ final class DesktopVideoNSView: NSView, RTCVideoViewDelegate, NSTextInputClient 
     }
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { localInputEnabled ? .textArea : .image }
-    override func accessibilityLabel() -> String? { "远程桌面输入" }
+    override func accessibilityLabel() -> String? { L10n.text("远程桌面输入") }
     override func isAccessibilityFocused() -> Bool { acceptsKeyboardInput }
     override func accessibilityValue() -> Any? { markedText.string }
     override func accessibilityNumberOfCharacters() -> Int { markedText.length }

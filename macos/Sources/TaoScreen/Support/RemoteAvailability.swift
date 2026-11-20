@@ -21,7 +21,7 @@ final class RemoteAvailability: ObservableObject {
 
     init(defaults: UserDefaults = DesktopRuntime.defaults,
          begin: @escaping () -> NSObjectProtocol = {
-             ProcessInfo.processInfo.beginActivity(options: .userInitiated, reason: "TaoScreen 远程服务保持可连接")
+             ProcessInfo.processInfo.beginActivity(options: .userInitiated, reason: L10n.text("TaoScreen 远程服务保持可连接"))
          }, end: @escaping (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) }) {
         self.defaults = defaults; self.begin = begin; self.end = end
         // 保留旧版明确设置过的偏好；未设置过的新用户默认开启。
@@ -52,13 +52,13 @@ struct RemoteAvailabilitySettings: View {
     @ObservedObject private var availability = RemoteAvailability.shared
     var body: some View {
         Section {
-            Toggle("远程服务开启期间保持 Mac 唤醒", isOn: $availability.enabled)
-            Text(availability.keepingAwake ? "正在保持唤醒，等待远程连接" : "当前未保持唤醒")
+            Toggle(L10n.text("远程服务开启期间保持 Mac 唤醒"), isOn: $availability.enabled)
+            Text(availability.keepingAwake ? L10n.text("正在保持唤醒，等待远程连接") : L10n.text("当前未保持唤醒"))
                 .foregroundStyle(.secondary)
         } header: {
-            Text("远程连接与睡眠")
+            Text(L10n.text("远程连接与睡眠"))
         } footer: {
-            Text("远程桌面或独立端口服务运行时，即使没有连接也阻止自动睡眠。允许锁屏和熄屏，会增加电池耗电；合盖或手动睡眠仍可能中断连接。锁屏时仅已配置的无人值守连接可继续使用。")
+            Text(L10n.text("远程桌面或独立端口服务运行时，即使没有连接也阻止自动睡眠。允许锁屏和熄屏，会增加电池耗电；合盖或手动睡眠仍可能中断连接。锁屏时仅已配置的无人值守连接可继续使用。"))
         }
     }
 }

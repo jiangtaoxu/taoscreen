@@ -1,6 +1,7 @@
 <div align="center">
   <img src="macos/Resources/Brand/TaoScreen-logo.png" alt="TaoScreen 应用图标" width="128">
   <h1>TaoScreen 涛子远程桌面</h1>
+  <p>简体中文 · <a href="README.en.md">English</a></p>
   <p><strong>轻量、安全、可控的开源远程桌面与内网通道工具</strong></p>
   <p>支持 <strong>Tailscale / 局域网免登录直连</strong>，也支持通过 <strong>官方服务或自托管信令服务器</strong> 连接同账号设备</p>
   <p>
@@ -25,6 +26,8 @@
 **TaoScreen（涛子远程桌面）** 是一款专注于原生体验与数据自主可控的远程桌面项目。当前已完整实现 **macOS 14+ 原生桌面端**（Apple Silicon / Intel）与 **Go 自托管账号信令服务端**，后续规划覆盖 **iOS / Android 手机端** 与 **Windows 平台**。
 
 客户端启动后默认打开 **「免登录直连」**，可以通过 **Tailscale** 或局域网连接。切换到 **「账号直连」** 后，可使用官方服务或自己的信令服务管理同账号设备。
+
+客户端默认跟随 macOS 的首选语言，支持简体中文和 English。通过右上角的地球图标可以手动选择，确认重启应用后生效。
 
 ## 核心特点
 

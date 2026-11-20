@@ -36,6 +36,7 @@
 		8D0C40D107953427EBAD162F /* DesktopVideoSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9CDB31AFC7FA6F17FF484D /* DesktopVideoSettings.swift */; };
 		8EE74B808289A0DBFD32366A /* DesktopPortForwardingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B10B1284F4D9496DE58D0B0 /* DesktopPortForwardingModels.swift */; };
 		950070CDCE61B5B632504003 /* DesktopPermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F853F0B190C04A2243295C8E /* DesktopPermissions.swift */; };
+		953A09B7479394E2CF666AA1 /* DesktopLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF60DC6451C0472C1B05E0E /* DesktopLanguage.swift */; };
 		953D70BC1D60C8922ED68A8E /* DesktopPortUDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F26075BA5A472C53338153E /* DesktopPortUDP.swift */; };
 		9632181D4FD4BF30C7E032C9 /* DesktopAccountState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF3E74E29F5D590213E4EC1B /* DesktopAccountState.swift */; };
 		9F1BCC24B71E751E556D4034 /* DesktopModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */; };
@@ -52,6 +53,7 @@
 		DD6DD3391E9208D7D9E68D6D /* DesktopPortWindowCloseGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */; };
 		E68BB1A05BB9205875F83D80 /* DesktopPrivacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5E9ED68056A6AFE2AA3A7F4 /* DesktopPrivacy.swift */; };
 		E758AC6848DB9376EA71DC72 /* DesktopAccountLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8AA74E1ACE43DB78EE68ABB /* DesktopAccountLoginView.swift */; };
+		E827D145AF73C818FD5E0A80 /* English.json in Resources */ = {isa = PBXBuildFile; fileRef = 1004BA606A4E2CA97D5C72E7 /* English.json */; };
 		EAAD58FFAA0F5C2685E6B878 /* DesktopUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4962CC279D7C28D68A154F8D /* DesktopUpdates.swift */; };
 		EB5C6C3AF1B49B50F1F3343E /* DesktopRemoteSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF82D1F525B0F3C23A016F1D /* DesktopRemoteSecurity.swift */; };
 		FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 53CA7A24A877328AB638E714 /* AppIcon.icns */; };
@@ -64,6 +66,7 @@
 		04EE4B0B1A5E17CE7FB689BD /* DesktopFileReturnPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFileReturnPanel.swift; sourceTree = "<group>"; };
 		06EC7029CFABDCA483B68321 /* DesktopMacControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMacControls.swift; sourceTree = "<group>"; };
 		090A013BFD01F9D87F7622F8 /* DesktopOAuthLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopOAuthLogin.swift; sourceTree = "<group>"; };
+		1004BA606A4E2CA97D5C72E7 /* English.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = English.json; sourceTree = "<group>"; };
 		122135A6D1BA17EB0301FAC9 /* DesktopModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopModels.swift; sourceTree = "<group>"; };
 		14703D864EBCE3658B11CB53 /* DesktopCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCapture.swift; sourceTree = "<group>"; };
 		1579A243968C5EBA92860A95 /* DesktopRemoteSecurityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRemoteSecurityView.swift; sourceTree = "<group>"; };
@@ -80,6 +83,7 @@
 		5455990D957A39841CA9E93E /* DesktopPortWindowCloseGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPortWindowCloseGuard.swift; sourceTree = "<group>"; };
 		58A61391F84E58B336A6A1BC /* DesktopPrivacyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopPrivacyView.swift; sourceTree = "<group>"; };
 		6554A8E31C37E544E8532089 /* DesktopFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFiles.swift; sourceTree = "<group>"; };
+		6FF60DC6451C0472C1B05E0E /* DesktopLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopLanguage.swift; sourceTree = "<group>"; };
 		7492CA0F8013E1963CC3E2C5 /* DesktopCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopCenter.swift; sourceTree = "<group>"; };
 		75392AD840636B8B534BB4A2 /* DesktopAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopAPI.swift; sourceTree = "<group>"; };
 		82B974EA0939275138D0E239 /* DesktopRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRuntime.swift; sourceTree = "<group>"; };
@@ -138,6 +142,7 @@
 		12240CAD1D6C85052C990057 /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				6FF60DC6451C0472C1B05E0E /* DesktopLanguage.swift */,
 				82B974EA0939275138D0E239 /* DesktopRuntime.swift */,
 				E129B417A3135521935DE3CA /* RemoteAvailability.swift */,
 			);
@@ -192,6 +197,7 @@
 		8890F9E9EE09F2EF411476A4 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				1004BA606A4E2CA97D5C72E7 /* English.json */,
 				9D8E6EE91EBC039C60045E3E /* LoginProviders.xcassets */,
 			);
 			path = Resources;
@@ -341,6 +347,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FA4AE8D14935EAC260D00315 /* AppIcon.icns in Resources */,
+				E827D145AF73C818FD5E0A80 /* English.json in Resources */,
 				A0D4FEB94A7B8F86EF810C32 /* LoginProviders.xcassets in Resources */,
 				3022B033982F8F4198E626E7 /* WebRTC-LICENSE.txt in Resources */,
 			);
@@ -371,6 +378,7 @@
 				4D6BCB81EA74D5FE8E9E79EC /* DesktopFileReturnPanel.swift in Sources */,
 				A6E2360ED7BF2E074F43D0B9 /* DesktopFiles.swift in Sources */,
 				478E2C92BCF5E8CAEC420460 /* DesktopInputDiagnostics.swift in Sources */,
+				953A09B7479394E2CF666AA1 /* DesktopLanguage.swift in Sources */,
 				FCDDFDD9B3B114DB2ECA6697 /* DesktopMacControls.swift in Sources */,
 				9F1BCC24B71E751E556D4034 /* DesktopModels.swift in Sources */,
 				5D94A1F8DBBD5FD1DCA49DF0 /* DesktopNativeDrag.swift in Sources */,

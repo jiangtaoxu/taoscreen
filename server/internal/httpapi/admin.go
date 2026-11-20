@@ -14,6 +14,7 @@ import (
 
 //go:embed admin.html
 var adminHTML string
+var adminTemplate = webTemplate("admin", adminHTML)
 
 const adminIdentityKey contextKey = "admin_identity"
 
@@ -87,8 +88,7 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+nonce+"'; style-src 'nonce-"+nonce+"'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
 	w.Header().Set("Referrer-Policy", "no-referrer")
-	_, e = w.Write([]byte(strings.ReplaceAll(adminHTML, "{{nonce}}", nonce)))
-	return e
+	return adminTemplate.Execute(w, webPageData{Language: s.webLanguage(w, r), Nonce: nonce})
 }
 func (s *Server) adminMe(w http.ResponseWriter, r *http.Request) error {
 	identity := r.Context().Value(adminIdentityKey).(adminIdentity)

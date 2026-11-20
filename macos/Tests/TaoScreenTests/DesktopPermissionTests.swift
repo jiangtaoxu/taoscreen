@@ -81,7 +81,7 @@ struct DesktopPermissionTests {
                                             openSettings: { opened.append($0); return false })
         permissions.open(.screenRecording)
         #expect(opened == [DesktopPermission.screenRecording.settingsURL])
-        #expect(permissions.message?.contains("手动进入") == true)
+        #expect(permissions.message == L10n.text("无法打开系统设置。请手动进入“系统设置 → 隐私与安全性 → \(DesktopPermission.screenRecording.settingsTitle)”。"))
         #expect(!permissions.snapshot.screenRecording)
         let process = try? DesktopPermissionRelaunch.process(app: URL(fileURLWithPath: "/Applications/Test $(echo wrong).app"), pid: 123)
         #expect(process?.arguments?.suffix(2) == ["123", "/Applications/Test $(echo wrong).app"])
@@ -106,8 +106,8 @@ struct DesktopPermissionTests {
             let roundTrip = try JSONDecoder().decode(DesktopSignal.self, from: JSONEncoder().encode(signal))
             await viewer.receive(roundTrip)
             #expect(viewer.sessionID == nil)
-            #expect(root.message?.contains("屏幕与系统音频录制") == true)
-            #expect(root.message?.contains("辅助功能与输入控制") == true)
+            #expect(root.message?.contains(DesktopPermission.screenRecording.title) == true)
+            #expect(root.message?.contains(DesktopPermission.accessibility.title) == true)
         }
     }
 
@@ -130,22 +130,22 @@ struct DesktopPermissionTests {
         let none = DesktopPermissionSnapshot(screenRecording: false, accessibility: false, postEvents: false)
         #expect(none.hasAnyMissing)
         #expect(none.missingAll == [.screenRecording, .accessibility])
-        #expect(none.detailReason(for: .screenRecording).contains("无法查看"))
-        #expect(none.detailReason(for: .accessibility).contains("无法操作"))
+        #expect(none.detailReason(for: .screenRecording) == L10n.text("未授权，其他设备无法查看此电脑的屏幕画面与系统声音。"))
+        #expect(none.detailReason(for: .accessibility) == L10n.text("未授权，其他设备无法操作鼠标、键盘、粘贴和拖放文件（仅观看模式不需要）。"))
 
         let partialInput = DesktopPermissionSnapshot(screenRecording: true, accessibility: true, postEvents: false)
         #expect(partialInput.hasAnyMissing)
-        #expect(partialInput.detailReason(for: .accessibility).contains("投递输入事件"))
+        #expect(partialInput.detailReason(for: .accessibility).contains(L10n.text("投递输入事件")))
 
         let ready = DesktopPermissionSnapshot(screenRecording: true, accessibility: true, postEvents: true)
         #expect(!ready.hasAnyMissing)
-        #expect(ready.detailReason(for: .screenRecording).contains("已授权"))
-        #expect(ready.detailReason(for: .accessibility).contains("已授权"))
+        #expect(ready.detailReason(for: .screenRecording) == L10n.text("已授权，其他设备可以查看此电脑的屏幕与系统声音。"))
+        #expect(ready.detailReason(for: .accessibility) == L10n.text("已授权，其他设备可以控制此电脑的鼠标和键盘。"))
 
         let permissions = DesktopPermissions(read: { none }, request: { _ in })
         permissions.request(.screenRecording)
-        #expect(permissions.message?.contains("打开录屏设置") == true)
+        #expect(permissions.message == L10n.text("已发起“屏幕与系统音频录制”授权请求。如系统未自动弹窗，请点击“打开录屏设置”手动勾选 TaoScreen；首次开启后通常需重启 TaoScreen 才会生效。"))
         permissions.request(.accessibility)
-        #expect(permissions.message?.contains("打开辅助功能设置") == true)
+        #expect(permissions.message == L10n.text("已发起“辅助功能”授权请求。如系统未自动弹窗，请点击“打开辅助功能设置”手动勾选 TaoScreen。"))
     }
 }

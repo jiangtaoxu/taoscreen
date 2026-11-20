@@ -271,7 +271,7 @@ struct DesktopDirectPAKE {
 
     init(prs: Data, mode: AuthMode, sessionID: UUID, certFingerprint: Data, nonce: Data) throws {
         guard certFingerprint.count == 32, nonce.count == 16 else {
-            throw CloudError("直连加密握手参数无效。")
+            throw CloudError(L10n.text("直连加密握手参数无效。"))
         }
         self.mode = mode
         self.sessionID = sessionID
@@ -311,7 +311,7 @@ struct DesktopDirectPAKE {
     }
 
     func clientConfirm(hostShare: Data) throws -> (clientConfirm: Data, expectedHostConfirm: Data) {
-        guard hostShare.count == 32 else { throw CloudError("对方返回的密钥交换数据无效。") }
+        guard hostShare.count == 32 else { throw CloudError(L10n.text("对方返回的密钥交换数据无效。")) }
         let peerKey = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: hostShare)
         let shared = try privateKey.sharedSecretFromKeyAgreement(with: peerKey)
         let sharedBytes = shared.withUnsafeBytes { Data($0) }
@@ -391,7 +391,7 @@ struct DesktopFixedPasswordVerifier: Codable, Equatable {
     static func deriveKey(password: String, salt: Data, rounds: Int) throws -> Data {
         guard !password.isEmpty, salt.count == 16,
               DesktopDirectPassword.kdfBounds(for: .unattendedPassword).contains(rounds) else {
-            throw CloudError("密码校验参数无效。")
+            throw CloudError(L10n.text("密码校验参数无效。"))
         }
         let passwordData = Array(password.utf8)
         var derived = [UInt8](repeating: 0, count: 32)
@@ -410,7 +410,7 @@ struct DesktopFixedPasswordVerifier: Codable, Equatable {
                 )
             }
         }
-        guard status == kCCSuccess else { throw CloudError("无法计算连接密码摘要（\(status)）。") }
+        guard status == kCCSuccess else { throw CloudError(L10n.text("无法计算连接密码摘要（\(status)）。")) }
         return Data(derived)
     }
 }
@@ -421,13 +421,13 @@ enum DesktopDirectPassword {
 
     static func validateFixed(_ password: String) -> String? {
         if password.count < minFixedLength {
-            return "固定访问密码至少需要 \(minFixedLength) 个字符。"
+            return L10n.text("固定访问密码至少需要 \(minFixedLength) 个字符。")
         }
         if password.utf8.count > maxFixedBytes {
-            return "固定访问密码不能超过 \(maxFixedBytes) 字节。"
+            return L10n.text("固定访问密码不能超过 \(maxFixedBytes) 字节。")
         }
         if password.unicodeScalars.contains(where: { $0.value < 0x20 || (0x7f...0x9f).contains($0.value) || $0.value == 0x2028 || $0.value == 0x2029 }) {
-            return "固定访问密码不能包含控制字符或换行。"
+            return L10n.text("固定访问密码不能包含控制字符或换行。")
         }
         return nil
     }

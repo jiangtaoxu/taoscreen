@@ -16,7 +16,7 @@ enum CloudKeychain {
         var item: CFTypeRef?
         let status = SecItemCopyMatching(q as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
-        guard status == errSecSuccess, let data = item as? Data else { throw CloudError("读取登录凭据失败（\(status)）。") }
+        guard status == errSecSuccess, let data = item as? Data else { throw CloudError(L10n.text("读取登录凭据失败（\(status)）。")) }
         return try JSONDecoder().decode(CloudCredentials.self, from: data)
     }
     static func save(_ credentials: CloudCredentials) throws {
@@ -29,11 +29,11 @@ enum CloudKeychain {
             add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             status = SecItemAdd(add as CFDictionary, nil)
         }
-        guard status == errSecSuccess else { throw CloudError("保存登录凭据失败（\(status)）。") }
+        guard status == errSecSuccess else { throw CloudError(L10n.text("保存登录凭据失败（\(status)）。")) }
     }
     static func delete(_ account: String) throws {
         let status = SecItemDelete(query(account) as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw CloudError("删除登录凭据失败（\(status)）。") }
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw CloudError(L10n.text("删除登录凭据失败（\(status)）。")) }
     }
 }
 
@@ -68,7 +68,7 @@ actor DesktopAPI {
         struct Metadata: Decodable { let service: String }
         let data = try await raw("GET", "/health/ready")
         guard try JSONDecoder().decode(Metadata.self, from: data).service == "taoscreen" else {
-            throw CloudError("请填写有效的 TaoScreen 服务地址。")
+            throw CloudError(L10n.text("请填写有效的 TaoScreen 服务地址。"))
         }
     }
 
@@ -97,13 +97,13 @@ actor DesktopAPI {
 
     private func decodeCredentials(_ data: Data, deviceID: UUID) throws -> CloudCredentials {
         let value = try JSONDecoder().decode(CloudJSON.self, from: data)
-        guard try value.id("device_id") == deviceID else { throw CloudError("登录返回的设备身份不匹配。") }
+        guard try value.id("device_id") == deviceID else { throw CloudError(L10n.text("登录返回的设备身份不匹配。")) }
         let credentials = CloudCredentials(
             account: .init(server: server.absoluteString, userID: try value.id("user_id"), email: try value.string("email")),
             deviceID: deviceID, accessToken: try value.string("access_token"), refreshToken: try value.string("refresh_token"),
             accessExpiresAt: try value.date("access_expires_at"))
         guard DesktopOAuthLogin.validSecret(credentials.accessToken), DesktopOAuthLogin.validSecret(credentials.refreshToken),
-              credentials.accessExpiresAt > Date(), !credentials.account.email.isEmpty else { throw CloudError("服务端返回的登录凭据无效。") }
+              credentials.accessExpiresAt > Date(), !credentials.account.email.isEmpty else { throw CloudError(L10n.text("服务端返回的登录凭据无效。")) }
         return credentials
     }
 
@@ -121,7 +121,7 @@ actor DesktopAPI {
             "code": .string(code), "state": .string(login.state), "code_verifier": .string(login.verifier)]), token: accessToken())
         struct Result: Decodable { let linked: Bool; let provider: DesktopLoginProvider.ID }
         let result = try JSONDecoder().decode(Result.self, from: data)
-        guard result.linked, result.provider == provider else { throw CloudError("服务端未确认账号绑定。") }
+        guard result.linked, result.provider == provider else { throw CloudError(L10n.text("服务端未确认账号绑定。")) }
     }
 
     func linkedIdentities() async throws -> [DesktopLinkedIdentity] {
@@ -143,7 +143,7 @@ actor DesktopAPI {
             "POST", "/v1/auth/register", body: .object(["email": .string(email), "password": .string(password)]))
     }
     private func accessToken() async throws -> String {
-        guard let current = credentials else { throw CloudError("请登录 TaoScreen 账户。") }
+        guard let current = credentials else { throw CloudError(L10n.text("请登录 TaoScreen 账户。")) }
         if current.accessExpiresAt.timeIntervalSinceNow > 30 { return current.accessToken }
         if let refreshing { return try await refreshing.value.accessToken }
         let task = Task { () throws -> CloudCredentials in
@@ -189,11 +189,12 @@ actor DesktopAPI {
         return try JSONDecoder().decode(Envelope.self, from: await raw("GET", "/v1/desktop/peers", token: accessToken())).peers
     }
     private func authenticatedSocketRequest(path: String) async throws -> URLRequest {
-        guard var components = URLComponents(url: server, resolvingAgainstBaseURL: false) else { throw CloudError("服务地址无效。") }
+        guard var components = URLComponents(url: server, resolvingAgainstBaseURL: false) else { throw CloudError(L10n.text("服务地址无效。")) }
         components.scheme = components.scheme == "https" ? "wss" : "ws"
         components.path = path
-        guard let url = components.url else { throw CloudError("服务地址无效。") }
+        guard let url = components.url else { throw CloudError(L10n.text("服务地址无效。")) }
         var request = URLRequest(url: url)
+        request.setValue(L10n.language.rawValue, forHTTPHeaderField: "Accept-Language")
         request.setValue("Bearer \(try await accessToken())", forHTTPHeaderField: "Authorization")
         return request
     }
@@ -201,8 +202,9 @@ actor DesktopAPI {
         _ method: String, _ path: String, body: CloudJSON? = nil, binary: Data? = nil,
         headers: [String: String] = [:], token: String? = nil
     ) async throws -> Data {
-        guard let url = URL(string: server.absoluteString + path) else { throw CloudError("请求地址无效。") }
+        guard let url = URL(string: server.absoluteString + path) else { throw CloudError(L10n.text("请求地址无效。")) }
         var req = URLRequest(url: url)
+        req.setValue(L10n.language.rawValue, forHTTPHeaderField: "Accept-Language")
         req.httpMethod = method
         if let body {
             req.httpBody = try CloudCoding.encode(body)
@@ -216,7 +218,7 @@ actor DesktopAPI {
         if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         headers.forEach { req.setValue($0.value, forHTTPHeaderField: $0.key) }
         let (data, response) = try await session.data(for: req)
-        guard let response = response as? HTTPURLResponse else { throw CloudError("服务器未返回 HTTP 响应。") }
+        guard let response = response as? HTTPURLResponse else { throw CloudError(L10n.text("服务器未返回 HTTP 响应。")) }
         guard (200..<300).contains(response.statusCode) else {
             struct Envelope: Decodable { let error: CloudAPIError }
             if let envelope = try? JSONDecoder().decode(Envelope.self, from: data) { throw envelope.error }

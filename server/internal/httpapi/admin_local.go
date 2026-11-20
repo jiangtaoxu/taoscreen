@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"errors"
-	"html/template"
 	"net/http"
 	"strings"
 	"time"
@@ -16,7 +15,7 @@ const adminSessionLifetime = 8 * time.Hour
 
 //go:embed admin_login.html
 var adminLoginHTML string
-var adminLoginTemplate = template.Must(template.New("admin-login").Parse(adminLoginHTML))
+var adminLoginTemplate = webTemplate("admin-login", adminLoginHTML)
 var adminOriginProtection http.CrossOriginProtection
 
 func adminCookie(secure bool) *http.Cookie {
@@ -67,16 +66,16 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) error {
 			http.Redirect(w, r, "/admin", http.StatusSeeOther)
 			return nil
 		}
-		return s.renderAdminLogin(w, http.StatusOK, "")
+		return s.renderAdminLogin(w, r, http.StatusOK, "")
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if err = r.ParseForm(); err != nil {
-		return s.renderAdminLogin(w, http.StatusBadRequest, "登录表单无效")
+		return s.renderAdminLogin(w, r, http.StatusBadRequest, "登录表单无效")
 	}
 	token, err := s.startLocalAdminSession(r, r.PostForm.Get("email"), r.PostForm.Get("password"), r.PostForm.Get("code"))
 	var issue *APIError
 	if errors.As(err, &issue) && issue.Status == http.StatusUnauthorized {
-		return s.renderAdminLogin(w, issue.Status, issue.Message)
+		return s.renderAdminLogin(w, r, issue.Status, issue.Message)
 	}
 	if err != nil {
 		return err
@@ -89,7 +88,7 @@ func (s *Server) adminLogin(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (s *Server) renderAdminLogin(w http.ResponseWriter, status int, message string) error {
+func (s *Server) renderAdminLogin(w http.ResponseWriter, r *http.Request, status int, message string) error {
 	nonce, err := randomToken()
 	if err != nil {
 		return err
@@ -97,11 +96,12 @@ func (s *Server) renderAdminLogin(w http.ResponseWriter, status int, message str
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'nonce-"+nonce+"'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
 	w.Header().Set("Referrer-Policy", "no-referrer")
+	locale := s.webLanguage(w, r)
 	w.WriteHeader(status)
-	return adminLoginTemplate.Execute(w, struct {
-		Nonce, Message string
-		RequireTOTP    bool
-	}{nonce, message, !s.Config.Auth.AdminTOTPDisabled})
+	return adminLoginTemplate.Execute(w, webPageData{
+		Language: locale, Nonce: nonce, Message: webText(locale, message),
+		RequireTOTP: !s.Config.Auth.AdminTOTPDisabled,
+	})
 }
 
 func (s *Server) startLocalAdminSession(r *http.Request, email, password, code string) (string, error) {

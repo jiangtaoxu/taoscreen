@@ -1,5 +1,7 @@
 # TaoScreen 使用指南
 
+简体中文 · [English](user-guide.en.md)
+
 [返回项目首页](../README.md) · [自托管部署指南](deployment.md) · [macOS 客户端开发说明](../macos/README.md) · [服务端说明](../server/README.md)
 
 TaoScreen（涛子远程桌面）面向 **macOS 14 及以上**系统（支持 Apple Silicon 与 Intel 芯片），支持两种互补的连接方式：
@@ -42,6 +44,8 @@ TaoScreen（涛子远程桌面）面向 **macOS 14 及以上**系统（支持 Ap
 - **操作系统**：macOS 14.0（Sonoma）及以上
 - **芯片架构**：Apple Silicon（M 系列）与 Intel 均可
 - 从 [官网下载](https://taoscreen.xujiangtao.com/download) 通用版 DMG，打开后将 `TaoScreen.app` 拖入「应用程序」。也可按照 [macOS 构建说明](../macos/README.md) 从源码构建。
+
+客户端默认选用 macOS 首选语言列表中的第一种受支持语言。支持简体中文和 English，列表里没有这两种语言时显示英文。点击右上角的地球图标可手动选择或恢复 **「跟随系统」**。确认重启后生效，重启会结束当前连接。
 
 ### 被控端权限清单
 

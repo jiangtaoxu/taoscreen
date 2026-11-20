@@ -107,10 +107,10 @@ final class DesktopDropDelivery {
         Self.log.notice("drop-target stage=\(stage, privacy: .public)")
         onDiagnostic?(stage)
     }
-    private var reason = "无法确认投放区域，请在远端手动使用已保存的文件。"
+    private var reason = L10n.text("无法确认投放区域，请在远端手动使用已保存的文件。")
     var isDelivering: Bool { native.isActive }
     var summary: String {
-        target == nil ? reason : "上传完成后在原位置拖入文件，请保持目标不变。"
+        target == nil ? reason : L10n.text("上传完成后在原位置拖入文件，请保持目标不变。")
     }
 
     func invalidate() {
@@ -118,19 +118,19 @@ final class DesktopDropDelivery {
         if let globalInputMonitor { NSEvent.removeMonitor(globalInputMonitor) }
         localInputMonitor = nil; globalInputMonitor = nil
         target = nil; generation = UUID(); native.cancel()
-        reason = "目标已变化，文件已保存，未自动投放。"
+        reason = L10n.text("目标已变化，文件已保存，未自动投放。")
     }
 
     func prepare(_ point: DesktopDropPoint, input: DesktopInputReceiver, allowed: () -> Bool) async {
         invalidate()
         let token = generation
-        reason = "此区域无法确认投放目标，文件将保存在远端暂存目录。"
+        reason = L10n.text("此区域无法确认投放目标，文件将保存在远端暂存目录。")
         guard !Task.isCancelled, point.isValid, allowed(), input.enabled else { return }
         guard AXIsProcessTrusted(), CGPreflightPostEventAccess() else {
-            reason = "远端辅助功能或输入控制权限不可用，文件将保存在暂存目录。"; return
+            reason = L10n.text("远端辅助功能或输入控制权限不可用，文件将保存在暂存目录。"); return
         }
         guard !IsSecureEventInputEnabled() else {
-            reason = "远端处于安全输入状态，文件将保存在暂存目录。"; return
+            reason = L10n.text("远端处于安全输入状态，文件将保存在暂存目录。"); return
         }
         let bounds = CGDisplayBounds(input.displayID)
         let position = CGPoint(x: bounds.minX + point.x * max(0, bounds.width - 1),
@@ -165,7 +165,7 @@ final class DesktopDropDelivery {
             MainActor.assumeIsolated { if self?.native.isActive == false { self?.invalidate() } }
             return event
         }
-        reason = "目标已变化，文件已保存，未自动投放。"
+        reason = L10n.text("目标已变化，文件已保存，未自动投放。")
     }
 
     func deliver(_ urls: [URL], input: DesktopInputReceiver, allowed: @escaping () -> Bool) async -> DesktopDropResult {
@@ -185,11 +185,11 @@ final class DesktopDropDelivery {
         if generation == token { invalidate() }
         let message: String
         switch outcome {
-        case .accepted: message = "目标已接受文件拖放，请在目标应用中确认处理结果。"
-        case .rejected: message = "目标未接受文件拖放，文件已保存在远端暂存目录。"
-        case .cancelled: message = "投放已取消或目标发生变化，文件已保存在远端暂存目录。"
-        case .unavailable: message = "远端无法启动系统拖放，请检查辅助功能权限；文件已保存在暂存目录。"
-        case .timedOut: message = "等待目标拖放响应超时，文件已保存；请检查目标，避免重复投放。"
+        case .accepted: message = L10n.text("目标已接受文件拖放，请在目标应用中确认处理结果。")
+        case .rejected: message = L10n.text("目标未接受文件拖放，文件已保存在远端暂存目录。")
+        case .cancelled: message = L10n.text("投放已取消或目标发生变化，文件已保存在远端暂存目录。")
+        case .unavailable: message = L10n.text("远端无法启动系统拖放，请检查辅助功能权限；文件已保存在暂存目录。")
+        case .timedOut: message = L10n.text("等待目标拖放响应超时，文件已保存；请检查目标，避免重复投放。")
         }
         return .init(message: message, warning: outcome != .accepted, paths: paths)
     }

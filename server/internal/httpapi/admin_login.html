@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.Language}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>TaoScreen 管理后台登录</title>
+  <title>{{tr .Language "TaoScreen 管理后台登录"}}</title>
   <style nonce="{{.Nonce}}">
     :root {
       color-scheme: light;
@@ -53,6 +53,18 @@
       main { padding: 24px; }
       input { font-size: 16px; }
     }
+
+    .web-language { width: fit-content; margin-block: 8px; }
+    .web-language details { position: relative; }
+    .web-language summary { cursor: pointer; }
+    .web-language details > div {
+      position: absolute; z-index: 2; inset-inline-start: 0;
+      display: grid; gap: 5px; min-width: 130px; padding: 9px 12px;
+      background: white; border: 1px solid #acb8b2; border-radius: 8px;
+      box-shadow: 0 5px 14px #16382a22; white-space: nowrap;
+    }
+    .web-language a { color: #1b5540; }
+    .web-language a[aria-current] { font-weight: 700; }
   </style>
 </head>
 <body>
@@ -61,22 +73,23 @@
       <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.6"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M8 10h8m-3-3 3 3-3 3"/></svg></span>
       TaoScreen
     </div>
-    <h1>管理后台登录</h1>
+    {{template "language-menu" .}}
+    <h1>{{tr .Language "管理后台登录"}}</h1>
     {{if .Message}}<p role="alert">{{.Message}}</p>{{end}}
     <form action="/admin/login" method="post">
-      <label>管理员邮箱
+      <label>{{tr .Language "管理员邮箱"}}
         <input name="email" type="email" autocomplete="username" maxlength="254" required autofocus>
       </label>
-      <label>密码
+      <label>{{tr .Language "密码"}}
         <input name="password" type="password" autocomplete="current-password" required>
       </label>
       {{if .RequireTOTP}}
-      <label>动态码或恢复码
+      <label>{{tr .Language "动态码或恢复码"}}
         <input name="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" maxlength="26" required aria-describedby="code-hint">
-        <small id="code-hint">输入验证器显示的六位动态码，或使用一次性恢复码。</small>
+        <small id="code-hint">{{tr .Language "输入验证器显示的六位动态码，或使用一次性恢复码。"}}</small>
       </label>
       {{end}}
-      <button type="submit">登录</button>
+      <button type="submit">{{tr .Language "登录"}}</button>
     </form>
   </main>
 </body>

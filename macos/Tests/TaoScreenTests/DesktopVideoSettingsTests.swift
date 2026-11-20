@@ -47,7 +47,7 @@ struct DesktopVideoSettingsTests {
         let selection = DesktopVideoSelection()
         #expect(selection.preference == .ultra && selection.selectedPreset == .ultra)
         #expect(!selection.supported && selection.confirmed == nil)
-        #expect(selection.statusText.contains("升级"))
+        #expect(selection.statusText == L10n.text("对方尚未声明支持画面设置，请确认被控端已升级。"))
     }
 
     @Test func protocolValidatesShapeAndRejectsMalformedOrUnknownValues() throws {
@@ -100,7 +100,7 @@ struct DesktopVideoSettingsTests {
         #expect(!selection.changing && selection.request == nil)
         #expect(selection.preference == .smooth && selection.confirmed?.preset == .smooth)
         #expect(selection.retryPreset == nil)
-        #expect(selection.statusText.contains("帧率上限 60"))
+        #expect(selection.statusText == selection.confirmed?.description && selection.statusText.contains("60"))
         let result8 = selection.receive(status(.standard, id: request.requestID))
         #expect(!result8)
     }

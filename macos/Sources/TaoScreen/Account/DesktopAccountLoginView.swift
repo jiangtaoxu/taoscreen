@@ -32,8 +32,8 @@ struct DesktopAccountLoginView: View {
                     .frame(width: 58, height: 58)
                     .background(DesktopWorkspaceStyle.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
                     .accessibilityHidden(true)
-                Text("登录 TaoScreen").font(.title.weight(.semibold))
-                Text("在两台 Mac 上登录同一个账号，即可连接。")
+                Text(L10n.text("登录 TaoScreen")).font(.title.weight(.semibold))
+                Text(L10n.text("在两台 Mac 上登录同一个账号，即可连接。"))
                     .foregroundStyle(.secondary)
             }
             VStack(spacing: 10) {
@@ -46,7 +46,7 @@ struct DesktopAccountLoginView: View {
                                 .scaledToFit()
                                 .frame(width: 18, height: 18)
                                 .accessibilityHidden(true)
-                            Text("使用 \(provider.id.title) 登录")
+                            Text(L10n.text("使用 \(provider.id.title) 登录"))
                         }
                     }
                     .buttonStyle(DesktopProviderButtonStyle())
@@ -56,11 +56,11 @@ struct DesktopAccountLoginView: View {
             }
             if let provider = account.loginConflictProvider {
                 VStack(spacing: 8) {
-                    Text("此邮箱已开通 TaoScreen 账号").font(.headline)
-                    Text("账号开通后可能从未登录。请先用原来的方式登录，再从右上角账号菜单绑定 \(provider.title)。")
+                    Text(L10n.text("此邮箱已开通 TaoScreen 账号")).font(.headline)
+                    Text(L10n.text("账号开通后可能从未登录。请先用原来的方式登录，再从右上角账号菜单绑定 \(provider.title)。"))
                         .foregroundStyle(.secondary)
                     if account.allowsPasswordLogin {
-                        Button("使用邮箱和密码登录", action: openPasswordLogin).disabled(account.busy)
+                        Button(L10n.text("使用邮箱和密码登录"), action: openPasswordLogin).disabled(account.busy)
                     }
                 }
                 .padding(14)
@@ -70,7 +70,7 @@ struct DesktopAccountLoginView: View {
             if account.busy {
                 DesktopLoginProgress(account: account)
             } else if account.account != nil {
-                Button("退出当前账号以切换登录") { Task { await account.signOut() } }
+                Button(L10n.text("退出当前账号以切换登录")) { Task { await account.signOut() } }
             }
         }
         .multilineTextAlignment(.center)
@@ -80,17 +80,17 @@ struct DesktopAccountLoginView: View {
 
     @ViewBuilder private var loginOptionsStatus: some View {
         if account.serverText.isEmpty {
-            Text("请在右上角的设置中配置登录服务器。").foregroundStyle(.secondary)
+            Text(L10n.text("请在右上角的设置中配置登录服务器。")).foregroundStyle(.secondary)
         } else if account.loginMethodsUnavailable {
-            Text("无法检测当前服务器的登录方式。").foregroundStyle(.secondary)
-            Button("重试") { retry += 1 }
+            Text(L10n.text("无法检测当前服务器的登录方式。")).foregroundStyle(.secondary)
+            Button(L10n.text("重试")) { retry += 1 }
         } else if account.providersLoaded {
             Text(account.allowsPasswordLogin
-                 ? "请在右上角的设置中使用邮箱和密码登录。"
-                 : "当前服务器未启用登录方式，请联系管理员。")
+                 ? L10n.text("请在右上角的设置中使用邮箱和密码登录。")
+                 : L10n.text("当前服务器未启用登录方式，请联系管理员。"))
                 .foregroundStyle(.secondary)
         } else {
-            ProgressView("正在检查登录方式…").controlSize(.small)
+            ProgressView(L10n.text("正在检查登录方式…")).controlSize(.small)
         }
     }
 
@@ -161,38 +161,38 @@ struct DesktopLoginSettings: View {
 
     private var serverSettings: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("登录设置").font(.title2.bold())
+            Text(L10n.text("登录设置")).font(.title2.bold())
             VStack(alignment: .leading, spacing: 10) {
                 if !DesktopAccountState.defaultServer.isEmpty {
-                    Picker("登录服务器", selection: $usesDefaultServer) {
-                        Text("默认服务器").tag(true)
-                        Text("自定义服务器").tag(false)
+                    Picker(L10n.text("登录服务器"), selection: $usesDefaultServer) {
+                        Text(L10n.text("默认服务器")).tag(true)
+                        Text(L10n.text("自定义服务器")).tag(false)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
                 }
                 if !usesDefaultServer {
-                    Text("服务器地址").font(.subheadline)
+                    Text(L10n.text("服务器地址")).font(.subheadline)
                     TextField("https://", text: $customServer)
                         .textContentType(.URL)
                         .textFieldStyle(.roundedBorder)
-                        .accessibilityLabel("服务器地址")
+                        .accessibilityLabel(L10n.text("服务器地址"))
                 }
             }
             .disabled(account.busy || account.account != nil)
             if account.account != nil {
-                Text("退出当前账号后可切换服务器。").font(.caption).foregroundStyle(.secondary)
+                Text(L10n.text("退出当前账号后可切换服务器。")).font(.caption).foregroundStyle(.secondary)
             }
             if account.allowsPasswordLogin && !selectionChanged {
                 Divider()
-                Button("使用邮箱和密码登录") { showsPasswordForm = true }
+                Button(L10n.text("使用邮箱和密码登录")) { showsPasswordForm = true }
                     .disabled(account.busy)
             }
             if let selectionError { Text(selectionError).foregroundStyle(.red) }
             HStack {
                 Spacer()
-                Button("取消", role: .cancel) { dismiss() }
-                Button(selectionChanged ? "保存" : "完成", action: applySelection)
+                Button(L10n.text("取消"), role: .cancel) { dismiss() }
+                Button(selectionChanged ? L10n.text("保存") : L10n.text("完成"), action: applySelection)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -220,18 +220,18 @@ private struct DesktopPasswordLoginView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("邮箱登录").font(.title2.bold())
+            Text(L10n.text("邮箱登录")).font(.title2.bold())
             Group {
-                TextField("邮箱", text: $email).textContentType(.username)
-                SecureField("密码", text: $password).textContentType(.password).privacySensitive()
+                TextField(L10n.text("邮箱"), text: $email).textContentType(.username)
+                SecureField(L10n.text("密码"), text: $password).textContentType(.password).privacySensitive()
             }
             .disabled(account.busy)
             if let message = account.message { Text(message).foregroundStyle(.red).textSelection(.enabled) }
             if account.busy { DesktopLoginProgress(account: account) }
             HStack {
-                Button("返回", action: goBack).disabled(account.busy)
+                Button(L10n.text("返回"), action: goBack).disabled(account.busy)
                 Spacer()
-                Button("登录", action: signIn).keyboardShortcut(.defaultAction).disabled(!canSignIn)
+                Button(L10n.text("登录"), action: signIn).keyboardShortcut(.defaultAction).disabled(!canSignIn)
             }
         }
         .textFieldStyle(.roundedBorder)
@@ -252,8 +252,8 @@ private struct DesktopLoginProgress: View {
     var body: some View {
         HStack {
             ProgressView().controlSize(.small)
-            Text(account.authorizingInBrowser ? "请在浏览器中完成授权…" : "正在处理账号请求…")
-            Button("取消") { account.cancelLogin() }
+            Text(account.authorizingInBrowser ? L10n.text("请在浏览器中完成授权…") : L10n.text("正在处理账号请求…"))
+            Button(L10n.text("取消")) { account.cancelLogin() }
         }
     }
 }

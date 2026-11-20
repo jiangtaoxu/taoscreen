@@ -1,0 +1,10 @@
+{{define "language-menu"}}<nav class="web-language" aria-label="{{tr .Language "语言"}}">
+  <details>
+    <summary>{{tr .Language "语言"}}</summary>
+    <div>
+      <a href="?lang=zh-Hans" lang="zh-Hans"{{if eq .Language "zh-Hans"}} aria-current="true"{{end}}>简体中文</a>
+      <a href="?lang=en" lang="en"{{if eq .Language "en"}} aria-current="true"{{end}}>English</a>
+      <a href="?lang=system">{{tr .Language "跟随系统"}}</a>
+    </div>
+  </details>
+</nav>{{end}}

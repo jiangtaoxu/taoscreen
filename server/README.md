@@ -1,5 +1,7 @@
 # TaoScreen 服务端
 
+简体中文 · [English](README.en.md)
+
 [返回项目首页](../README.md) · [自托管部署指南](../docs/deployment.md) · [macOS 客户端说明](../macos/README.md)
 
 TaoScreen（涛子远程桌面）的账号、设备会话和信令服务。

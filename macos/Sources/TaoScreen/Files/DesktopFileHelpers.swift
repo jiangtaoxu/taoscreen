@@ -14,12 +14,12 @@ struct DesktopFileFailure: Error, LocalizedError, Equatable, Sendable {
     var errorDescription: String? { message }
 
     static func badRequest(_ message: String) -> DesktopFileFailure { .init(status: 400, code: "bad_request", message: message) }
-    static let unauthorized = DesktopFileFailure(status: 401, code: "unauthorized", message: "对方不是同一账户的设备。")
-    static let notFound = DesktopFileFailure(status: 404, code: "not_found", message: "传输不存在或已取消。")
+    static let unauthorized = DesktopFileFailure(status: 401, code: "unauthorized", message: L10n.text("对方不是同一账户的设备。"))
+    static let notFound = DesktopFileFailure(status: 404, code: "not_found", message: L10n.text("传输不存在或已取消。"))
     static func conflict(_ message: String) -> DesktopFileFailure { .init(status: 409, code: "conflict", message: message) }
-    static let tooLarge = DesktopFileFailure(status: 413, code: "too_large", message: "文件数量或总大小超过上限。")
-    static let insufficientSpace = DesktopFileFailure(status: 507, code: "insufficient_space", message: "对方磁盘空间不足。")
-    static let busy = DesktopFileFailure(status: 503, code: "busy", message: "对方同时进行的传输过多，请稍后重试。")
+    static let tooLarge = DesktopFileFailure(status: 413, code: "too_large", message: L10n.text("文件数量或总大小超过上限。"))
+    static let insufficientSpace = DesktopFileFailure(status: 507, code: "insufficient_space", message: L10n.text("对方磁盘空间不足。"))
+    static let busy = DesktopFileFailure(status: 503, code: "busy", message: L10n.text("对方同时进行的传输过多，请稍后重试。"))
     static func `internal`(_ message: String) -> DesktopFileFailure { .init(status: 500, code: "internal", message: message) }
 
     struct Envelope: Codable {
@@ -91,7 +91,7 @@ enum DesktopFileSources {
             try Task.checkCancellation()
             let url = original.resolvingSymlinksInPath()
             guard let values = try? url.resourceValues(forKeys: Set(keys)) else {
-                throw DesktopFileFailure.badRequest("无法读取「\(original.lastPathComponent)」，文件可能已被移走。")
+                throw DesktopFileFailure.badRequest(L10n.text("无法读取「\(original.lastPathComponent)」，文件可能已被移走。"))
             }
             let top = uniqueName(DesktopFilePath.component(original.lastPathComponent), taken: &topNames)
             if values.isRegularFile == true {
@@ -112,14 +112,14 @@ enum DesktopFileSources {
                 sources += files.sorted { $0.path < $1.path }
             }
             guard sources.count <= DesktopFileLimits.maxItems else {
-                throw DesktopFileFailure.badRequest("一次最多发送 \(DesktopFileLimits.maxItems) 个文件，可先压缩文件夹再发送。")
+                throw DesktopFileFailure.badRequest(L10n.text("一次最多发送 \(DesktopFileLimits.maxItems) 个文件，可先压缩文件夹再发送。"))
             }
         }
-        guard !sources.isEmpty else { throw DesktopFileFailure.badRequest("没有可发送的文件（空文件夹或不支持的类型）。") }
+        guard !sources.isEmpty else { throw DesktopFileFailure.badRequest(L10n.text("没有可发送的文件（空文件夹或不支持的类型）。")) }
         guard sources.reduce(0, { $0 + $1.bytes }) <= DesktopFileLimits.maxTotalBytes else { throw DesktopFileFailure.tooLarge }
         guard sources.allSatisfy({ DesktopFilePath.isValid($0.path) }),
               !DesktopFilePath.conflicts(sources.map(\.path), directories: Set(sources.filter(\.isDirectory).map(\.path))) else {
-            throw DesktopFileFailure.badRequest("文件名过长、层级过深或在不区分大小写时重名。")
+            throw DesktopFileFailure.badRequest(L10n.text("文件名过长、层级过深或在不区分大小写时重名。"))
         }
         return sources
     }

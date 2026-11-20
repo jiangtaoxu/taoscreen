@@ -1,5 +1,7 @@
 # 桌面下载与更新
 
+简体中文 · [English](desktop-updates.en.md)
+
 `DESKTOP_RELEASE_ORIGIN` 用于配置应用安装包的 HTTPS 发布源，例如 `https://downloads.example.com`。可以用对象存储或静态文件服务托管。变量留空时，下载页显示尚未提供安装包。
 
 发布源根目录按架构提供 `taoscreen-macos-arm64.json` 或 `taoscreen-macos-x86_64.json`。安装包路径为 `/macos/<版本>/TaoScreen-<版本>-<架构>.dmg`。可以使用桌面端的 `scripts/build-release.sh` 生成安装包、安装包清单和 Sparkle appcast。

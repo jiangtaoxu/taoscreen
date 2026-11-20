@@ -91,7 +91,7 @@ struct DesktopDirectIdentity {
         code = DesktopDirectCode(fingerprint: fingerprint)
     }
 
-    private static var failure: CloudError { CloudError("无法创建本次直连的加密身份，请重试。") }
+    private static var failure: CloudError { CloudError(L10n.text("无法创建本次直连的加密身份，请重试。")) }
 
     private static func der(_ tag: UInt8, _ contents: Data) -> Data {
         if contents.count < 128 { return Data([tag, UInt8(contents.count)]) + contents }

@@ -1,5 +1,7 @@
 # TaoScreen 自托管部署指南
 
+简体中文 · [English](deployment.en.md)
+
 [返回项目首页](../README.md) · [使用指南](user-guide.md) · [服务端技术说明](../server/README.md) · [登录与后台配置](../server/docs/authentication.md) · [独立桌面协议](../server/docs/remote-desktop.md)
 
 如果你只在局域网或 Tailscale 内网使用 TaoScreen，**无需部署任何服务端**，直接在两台 Mac 上使用客户端的「免登录直连」即可（详见 [使用指南](user-guide.md#2-使用方式一只客户端免登录直连局域网--tailscale)）。

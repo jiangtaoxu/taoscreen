@@ -1,5 +1,7 @@
 # TaoScreen Logo
 
+简体中文 · [English](README.en.md)
+
 使用内置 ImageGen 生成。图标以深靛蓝圆角方形为底，浅紫色与薄荷色的显示器轮廓相叠，前方屏幕里的薄荷色指针表示远程操控。源图为带透明边距的 1254×1254 像素 PNG。
 
 - `TaoScreen-logo.png` 是项目介绍和生成应用图标使用的源图。

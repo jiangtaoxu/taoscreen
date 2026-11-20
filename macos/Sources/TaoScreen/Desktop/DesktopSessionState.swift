@@ -95,11 +95,11 @@ enum DesktopSignalFailure: Equatable {
     var endsSession: Bool { self == .authentication || self == .invalidMessage }
     var message: String {
         switch self {
-        case .authentication: return "登录已失效或服务器拒绝访问，请重新登录或检查服务设置。"
-        case .occupied: return "此设备的信令连接仍被占用，正在等待释放；请检查是否重复运行 TaoScreen。"
-        case .endpointUnavailable: return "远程桌面接口返回 HTTP 404，正在重新连接；请检查服务地址或服务器路由。"
-        case .invalidMessage: return "收到无效的桌面信令，连接已停止。"
-        case .network: return "信令暂时不可用，正在重新连接…"
+        case .authentication: return L10n.text("登录已失效或服务器拒绝访问，请重新登录或检查服务设置。")
+        case .occupied: return L10n.text("此设备的信令连接仍被占用，正在等待释放；请检查是否重复运行 TaoScreen。")
+        case .endpointUnavailable: return L10n.text("远程桌面接口返回 HTTP 404，正在重新连接；请检查服务地址或服务器路由。")
+        case .invalidMessage: return L10n.text("收到无效的桌面信令，连接已停止。")
+        case .network: return L10n.text("信令暂时不可用，正在重新连接…")
         }
     }
 }
@@ -132,14 +132,14 @@ final class DesktopDisplayActivity {
     func start() throws {
         if displayAssertion == 0 {
             let result = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
-                IOPMAssertionLevel(kIOPMAssertionLevelOn), "TaoScreen会话" as CFString, &displayAssertion)
-            guard result == kIOReturnSuccess else { throw CloudError("无法保持共享屏幕唤醒（\(result)）。") }
+                IOPMAssertionLevel(kIOPMAssertionLevelOn), L10n.text("TaoScreen会话") as CFString, &displayAssertion)
+            guard result == kIOReturnSuccess else { throw CloudError(L10n.text("无法保持共享屏幕唤醒（\(result)）。")) }
         }
-        let result = IOPMAssertionDeclareUserActivity("TaoScreen 远程连接" as CFString,
+        let result = IOPMAssertionDeclareUserActivity(L10n.text("TaoScreen 远程连接") as CFString,
             kIOPMUserActiveRemote, &activityAssertion)
         guard result == kIOReturnSuccess else {
             stop()
-            throw CloudError("无法唤醒共享屏幕（\(result)）。")
+            throw CloudError(L10n.text("无法唤醒共享屏幕（\(result)）。"))
         }
     }
 

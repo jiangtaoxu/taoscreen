@@ -7,7 +7,7 @@ import Foundation
 final class DesktopPortService: ObservableObject {
     @Published var enabled: Bool { didSet { defaults.set(enabled, forKey: Self.enabledKey); reconcile() } }
     @Published private(set) var online = false
-    @Published private(set) var status = "未开启独立端口转发"
+    @Published private(set) var status = L10n.text("未开启独立端口转发")
     @Published private(set) var peers: [DesktopPeer] = []
     @Published private(set) var knownPeers: [DesktopPeer] = []
     @Published var selectedPeerID: UUID?
@@ -55,7 +55,7 @@ final class DesktopPortService: ObservableObject {
         return forwarder
     }
     func openMapping(for peer: DesktopPeer) {
-        guard settingsAccountID != nil else { message = "请先登录账号，再管理端口映射。"; return }
+        guard settingsAccountID != nil else { message = L10n.text("请先登录账号，再管理端口映射。"); return }
         remember([peer]); selectedPeerID = peer.id
         selectedSessionID = mappingSession(for: peer.id)?.id
         if !enabled { enabled = true }
@@ -107,7 +107,7 @@ final class DesktopPortService: ObservableObject {
         for name in [NSWorkspace.willSleepNotification, NSWorkspace.sessionDidResignActiveNotification] {
             NSWorkspace.shared.notificationCenter.publisher(for: name).sink { [weak self] _ in
                 Task { @MainActor in
-                    self?.suspended = true; self?.shutdown(reason: "电脑休眠或当前用户会话已离开，独立转发已停止。")
+                    self?.suspended = true; self?.shutdown(reason: L10n.text("电脑休眠或当前用户会话已离开，独立转发已停止。"))
                 }
             }.store(in: &observations)
         }
@@ -131,14 +131,14 @@ final class DesktopPortService: ObservableObject {
             autoAccept = account.map { defaults.bool(forKey: "taoscreen.ports.autoAccept.\($0)") } ?? false
             if let account {
                 do { knownPeers = try DesktopPortDeviceStore(defaults: defaults, accountID: account).load() }
-                catch { catalogWritable = false; message = "映射设备记录无法读取：\(error.localizedDescription)" }
+                catch { catalogWritable = false; message = L10n.text("映射设备记录无法读取：\(error.localizedDescription)") }
             }
         }
         let desired = enabled && !suspended ? account : nil
         if desired == activeAccountID, serviceTask != nil { return }
         shutdown()
         guard let desired, let api = cloud?.peerClient else {
-            status = enabled ? "请先登录账户，并保持当前用户会话可用" : "未开启独立端口转发"
+            status = enabled ? L10n.text("请先登录账户，并保持当前用户会话可用") : L10n.text("未开启独立端口转发")
             return
         }
         activeAccountID = desired
@@ -149,7 +149,7 @@ final class DesktopPortService: ObservableObject {
             while let self, !Task.isCancelled, self.generation == token {
                 var attempted: URLSessionWebSocketTask?
                 do {
-                    self.status = "正在连接独立端口服务…"
+                    self.status = L10n.text("正在连接独立端口服务…")
                     var request = try await api.portsRequest(); request.timeoutInterval = 15
                     guard self.generation == token, !Task.isCancelled else { return }
                     let socket = self.network.webSocketTask(with: request); attempted = socket; self.socket = socket
@@ -167,20 +167,20 @@ final class DesktopPortService: ObservableObject {
                         guard self.generation == token, !Task.isCancelled else { return }
                         let data: Data
                         switch response { case .data(let value): data = value; case .string(let value): data = Data(value.utf8); @unknown default: continue }
-                        guard data.count <= 64 * 1024 else { throw CloudError("独立端口信令过大。") }
+                        guard data.count <= 64 * 1024 else { throw CloudError(L10n.text("独立端口信令过大。")) }
                         let signal = try JSONDecoder().decode(DesktopSignal.self, from: data)
                         self.lastHeartbeat = ProcessInfo.processInfo.systemUptime
                         if signal.type == "session_revoked" {
-                            self.shutdown(reason: "登录授权已失效，独立端口连接已停止。")
-                            self.cloud?.requireLogin("登录授权已失效，请重新登录。"); return
+                            self.shutdown(reason: L10n.text("登录授权已失效，独立端口连接已停止。"))
+                            self.cloud?.requireLogin(L10n.text("登录授权已失效，请重新登录。")); return
                         }
                         if signal.type == "hello" {
                             guard signal.payload?.independent == true else {
-                                self.shutdown(reason: "服务器未声明支持独立端口会话，请升级服务端。")
-                                self.message = "服务器未声明支持独立端口会话，请升级服务端。"
+                                self.shutdown(reason: L10n.text("服务器未声明支持独立端口会话，请升级服务端。"))
+                                self.message = L10n.text("服务器未声明支持独立端口会话，请升级服务端。")
                                 return
                             }
-                            self.online = true; self.status = "独立端口服务在线 · 仅同账号设备可见"; attempt = 0
+                            self.online = true; self.status = L10n.text("独立端口服务在线 · 仅同账号设备可见"); attempt = 0
                             self.resumeSupported = signal.payload?.resume == true; self.keepaliveSupported = signal.payload?.keepalive == true
                             for session in self.sessions { session.signalHello(resume: self.resumeSupported, keepalive: self.keepaliveSupported) }
                             self.maintenance?.cancel()
@@ -199,11 +199,11 @@ final class DesktopPortService: ObservableObject {
                         httpStatus: (attempted?.response as? HTTPURLResponse)?.statusCode,
                         closeCode: attempted?.closeCode.rawValue)
                     if failure == .authentication {
-                        self.shutdown(reason: "登录授权已失效，独立端口连接已停止。")
-                        self.cloud?.requireLogin("独立端口服务登录已失效。"); return
+                        self.shutdown(reason: L10n.text("登录授权已失效，独立端口连接已停止。"))
+                        self.cloud?.requireLogin(L10n.text("独立端口服务登录已失效。")); return
                     }
-                    if failure.endsSession { self.shutdown(reason: "独立端口信令无效，连接已停止。"); return }
-                    self.status = failure == .endpointUnavailable ? "独立端口接口不可用，请确认服务端已升级" : "独立端口信令中断，正在恢复…"
+                    if failure.endsSession { self.shutdown(reason: L10n.text("独立端口信令无效，连接已停止。")); return }
+                    self.status = failure == .endpointUnavailable ? L10n.text("独立端口接口不可用，请确认服务端已升级") : L10n.text("独立端口信令中断，正在恢复…")
                     for session in self.sessions { session.signalInterrupted() }
                 }
                 guard self.generation == token, !Task.isCancelled else { return }
@@ -224,13 +224,13 @@ final class DesktopPortService: ObservableObject {
             if generation == token {
                 self.peers = peers; remember(peers); connectRequestedMapping()
             }
-        } catch { if generation == token { message = "独立端口设备列表刷新失败：\(error.localizedDescription)" } }
+        } catch { if generation == token { message = L10n.text("独立端口设备列表刷新失败：\(error.localizedDescription)") } }
     }
     func connect(to peer: DesktopPeer) {
         guard online, let verified = peers.first(where: { $0.id == peer.id }),
               let api = cloud?.peerClient, let accountID = activeAccountID, cloud?.account?.id == accountID else { return }
         if let existing = sessions.first(where: { $0.peer.id == peer.id }) { selectedSessionID = existing.id; return }
-        guard sessions.count < 8 else { message = "最多同时建立 8 条独立端口连接。"; return }
+        guard sessions.count < 8 else { message = L10n.text("最多同时建立 8 条独立端口连接。"); return }
         let session = makeSession(id: UUID(), peer: verified, host: false, api: api, accountID: accountID)
         sessions.append(session); selectedSessionID = session.id; session.request()
     }
@@ -259,7 +259,7 @@ final class DesktopPortService: ObservableObject {
         guard generation == token, online, let peer = peers.first(where: { $0.id == from }),
               let api = cloud?.peerClient, let accountID = activeAccountID, cloud?.account?.id == accountID else { return }
         guard DesktopLocalSession.current.canHost, sessions.count < 8, !sessions.contains(where: { $0.peer.id == from }) else {
-            send(.init(type: "reject", id: id, to: from, payload: .init(message: "此设备已有独立端口连接或当前用户会话不可用。"))); return
+            send(.init(type: "reject", id: id, to: from, payload: .init(message: L10n.text("此设备已有独立端口连接或当前用户会话不可用。")))); return
         }
         let session = makeSession(id: id, peer: peer, host: true, api: api, accountID: accountID)
         remember([peer])
@@ -287,6 +287,6 @@ final class DesktopPortService: ObservableObject {
         heartbeat?.cancel(); heartbeat = nil; maintenance?.cancel(); maintenance = nil
         socket?.cancel(with: .goingAway, reason: nil); socket = nil
         RemoteAvailability.shared.setActive(.ports, false)
-        status = reason ?? "独立端口服务已停止"
+        status = reason ?? L10n.text("独立端口服务已停止")
     }
 }

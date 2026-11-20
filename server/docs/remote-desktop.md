@@ -1,5 +1,7 @@
 # 独立桌面协议
 
+简体中文 · [English](remote-desktop.en.md)
+
 本服务使用自己的 PostgreSQL 账号、设备会话、第三方身份与短期登录事务表，以及独立 Redis。
 
 普通用户通过邮箱密码（生产开启 `ALLOW_PASSWORD_LOGIN=true` 时）或 Google / GitHub 授权，取得的均为 TaoScreen 自己的不透明会话令牌。HTTP 自助注册仅在显式开启的非生产环境保留。完整接入说明见 [登录与管理员后台](authentication.md)。

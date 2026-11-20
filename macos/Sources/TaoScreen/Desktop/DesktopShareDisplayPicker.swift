@@ -7,8 +7,8 @@ struct DesktopShareDisplayPicker: View {
     @State private var screens = NSScreen.screens
 
     var body: some View {
-        Picker("共享屏幕", selection: $selection) {
-            Text(allowsFixedDisplay ? "主屏幕（连接时选择）" : "主屏幕").tag(DesktopShareDisplay.main)
+        Picker(L10n.text("共享屏幕"), selection: $selection) {
+            Text(allowsFixedDisplay ? L10n.text("主屏幕（连接时选择）") : L10n.text("主屏幕")).tag(DesktopShareDisplay.main)
             if allowsFixedDisplay {
                 ForEach(screens, id: \.self) { screen in
                     if let id = screen.desktopDisplayID, id != center.managedVirtualDisplayID {
@@ -17,7 +17,7 @@ struct DesktopShareDisplayPicker: View {
                 }
                 if case let .fixed(id) = selection,
                    id == center.managedVirtualDisplayID || !screens.contains(where: { $0.desktopDisplayID == id }) {
-                    Text("已断开的屏幕（请重新选择）").tag(DesktopShareDisplay.fixed(id))
+                    Text(L10n.text("已断开的屏幕（请重新选择）")).tag(DesktopShareDisplay.fixed(id))
                 }
             }
             ForEach(DesktopVirtualDisplayPreset.allCases) { preset in
@@ -28,7 +28,7 @@ struct DesktopShareDisplayPicker: View {
             screens = NSScreen.screens
         }
         if selection.virtualPreset != nil {
-            Text("连接时创建扩展屏，断开后自动移除。")
+            Text(L10n.text("连接时创建扩展屏，断开后自动移除。"))
                 .font(.caption).foregroundStyle(.secondary)
         }
     }

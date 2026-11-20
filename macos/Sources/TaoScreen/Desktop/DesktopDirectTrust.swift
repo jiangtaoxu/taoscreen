@@ -17,7 +17,7 @@ struct DesktopDirectDeviceProof: Codable {
         let key = try P256.Signing.PublicKey(x963Representation: publicKey)
         let signature = try P256.Signing.ECDSASignature(derRepresentation: signature)
         guard key.isValidSignature(signature, for: Self.transcript(id, fingerprint, role)) else {
-            throw CloudError("直连设备身份验证失败。")
+            throw CloudError(L10n.text("直连设备身份验证失败。"))
         }
         return key.x963Representation
     }
@@ -119,7 +119,7 @@ struct DesktopTrustedStore {
     }
 
     private static func failure(_ status: OSStatus) -> CloudError {
-        CloudError("无法读取或更新本机直连授权钥匙串（\(status)）。请在本机登录状态下检查钥匙串后重试。")
+        CloudError(L10n.text("无法读取或更新本机直连授权钥匙串（\(status)）。请在本机登录状态下检查钥匙串后重试。"))
     }
 }
 

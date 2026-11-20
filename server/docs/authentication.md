@@ -1,5 +1,7 @@
 # TaoScreen 登录与管理员后台
 
+简体中文 · [English](authentication.en.md)
+
 普通用户可以使用邮箱密码、Google 或 GitHub。管理员使用本地密码登录，默认还需动态码，也可使用独立的 Cloudflare Access 应用。管理员身份与桌面用户账号及远程权限隔离。
 
 ## 自托管登录

@@ -71,7 +71,7 @@ final class DesktopDirectTransport {
     func start() {
         handshakeTimeout = Task { [weak self] in
             do { try await Task.sleep(for: .seconds(12)) } catch { return }
-            self?.cancel("连接超时，请检查地址、防火墙和连接码。")
+            self?.cancel(L10n.text("连接超时，请检查地址、防火墙和连接码。"))
         }
         connection.stateUpdateHandler = { [weak self] state in
             Task { @MainActor [weak self] in
@@ -81,9 +81,9 @@ final class DesktopDirectTransport {
                     do { try self.onReady?() } catch { self.cancel(error.localizedDescription); return }
                     self.reader = Task { [weak self] in await self?.readFrames() }
                 case .failed(let error), .waiting(let error):
-                    if case .tls = error { self.cancel("无法验证直连身份，请检查连接码或设备授权。") }
-                    else { self.cancel("直连网络不可用：\(error.localizedDescription)") }
-                case .cancelled: self.cancel("直连已关闭。")
+                    if case .tls = error { self.cancel(L10n.text("无法验证直连身份，请检查连接码或设备授权。")) }
+                    else { self.cancel(L10n.text("直连网络不可用：\(error.localizedDescription)")) }
+                case .cancelled: self.cancel(L10n.text("直连已关闭。"))
                 default: break
                 }
             }
@@ -96,7 +96,7 @@ final class DesktopDirectTransport {
     func send<Message: Encodable>(_ message: Message) throws {
         let data = try JSONEncoder().encode(message)
         guard !ended, data.count <= Self.frameLimit, queuedWrites < 256 else {
-            throw CloudError("直连信令通道不可用或消息过大。")
+            throw CloudError(L10n.text("直连信令通道不可用或消息过大。"))
         }
         let count = UInt32(data.count)
         let header = Data([UInt8(count >> 24), UInt8(truncatingIfNeeded: count >> 16),
@@ -142,7 +142,7 @@ final class DesktopDirectTransport {
                 let header = try await read(count: 4)
                 guard !ended else { return }
                 let length = header.reduce(0) { ($0 << 8) | Int($1) }
-                guard (1...Self.frameLimit).contains(length) else { throw CloudError("收到无效的直连信令长度。") }
+                guard (1...Self.frameLimit).contains(length) else { throw CloudError(L10n.text("收到无效的直连信令长度。")) }
                 let data = try await read(count: length)
                 guard !ended else { return }
                 try await onFrame?(data)
@@ -155,7 +155,7 @@ final class DesktopDirectTransport {
             connection.receive(minimumIncompleteLength: count, maximumLength: count) { data, _, _, error in
                 if let error { continuation.resume(throwing: error) }
                 else if let data, data.count == count { continuation.resume(returning: data) }
-                else { continuation.resume(throwing: CloudError("对方已关闭直连。")) }
+                else { continuation.resume(throwing: CloudError(L10n.text("对方已关闭直连。"))) }
             }
         }
     }
@@ -188,12 +188,12 @@ final class DesktopDirectService: ObservableObject {
     @Published var message: String?
     @Published private(set) var trustedDevices: [DesktopTrustedDevice] = []
     @Published private(set) var unattendedEnabled = false
-    @Published private(set) var unattendedStatus = "无人值守已关闭"
+    @Published private(set) var unattendedStatus = L10n.text("无人值守已关闭")
     @Published private(set) var networkInfo = DesktopLocalNetworkInfo()
     @Published private(set) var recentPeers: [DesktopRecentDirectPeer] = []
     @Published private(set) var unattendedPasswordSettings = DesktopUnattendedPasswordSettings()
     @Published private(set) var hasUnattendedPassword = false
-    @Published private(set) var unattendedPasswordStatus = "固定密码无人值守已关闭"
+    @Published private(set) var unattendedPasswordStatus = L10n.text("固定密码无人值守已关闭")
     @Published var autoReceiveEnabled: Bool {
         didSet { defaults?.set(autoReceiveEnabled, forKey: Self.autoReceiveKey) }
     }
@@ -357,7 +357,7 @@ final class DesktopDirectService: ObservableObject {
                 guard let self, let browser, self.browser === browser else { return }
                 switch state {
                 case .ready: self.browseMessage = nil
-                case .failed, .waiting: self.browseMessage = "附近设备发现不可用，请检查系统的本地网络权限，或直接输入地址连接。"
+                case .failed, .waiting: self.browseMessage = L10n.text("附近设备发现不可用，请检查系统的本地网络权限，或直接输入地址连接。")
                 default: break
                 }
             }
@@ -438,7 +438,7 @@ final class DesktopDirectService: ObservableObject {
                         self.temporaryPassword = self.reception?.temporaryPassword
                     case .failed(let error), .waiting(let error):
                         self.stopReceiving()
-                        self.message = "无法开启直连接收：\(error.localizedDescription)"
+                        self.message = L10n.text("无法开启直连接收：\(error.localizedDescription)")
                     default: break
                     }
                 }
@@ -454,7 +454,7 @@ final class DesktopDirectService: ObservableObject {
                 expiry = Task { [weak self] in
                     do { try await Task.sleep(for: .seconds(300)) } catch { return }
                     self?.stopReceiving()
-                    self?.message = "连接码已过期，请重新生成。"
+                    self?.message = L10n.text("连接码已过期，请重新生成。")
                 }
             }
         } catch { message = error.localizedDescription }
@@ -479,13 +479,13 @@ final class DesktopDirectService: ObservableObject {
             connectLegacy(endpoint: target, code: code.text, displayAddress: display)
         case .legacyCode(let code):
             guard let endpoint = DesktopDirectEndpoint.parse(address) else {
-                message = "请输入被控 Mac 的 Tailscale 地址或局域网 IP。"
+                message = L10n.text("请输入被控 Mac 的 Tailscale 地址或局域网 IP。")
                 return
             }
             connectLegacy(endpoint: endpoint, code: code.text, displayAddress: address.trimmingCharacters(in: .whitespacesAndNewlines))
         case .temporaryPassword(let password):
             guard let endpoint = DesktopDirectEndpoint.parse(address) else {
-                message = "请输入被控 Mac 的 Tailscale 地址或局域网 IP。"
+                message = L10n.text("请输入被控 Mac 的 Tailscale 地址或局域网 IP。")
                 return
             }
             connectWithPassword(endpoint: endpoint, password: password, unattended: false,
@@ -493,13 +493,13 @@ final class DesktopDirectService: ObservableObject {
         case .fixedPassword(let password):
             let defaultPort = passwordPort == .any ? DesktopTailscaleAddress.passwordPort : passwordPort
             guard let endpoint = DesktopDirectEndpoint.parse(address, defaultPort: defaultPort) else {
-                message = "请输入被控 Mac 的 Tailscale IP 或 MagicDNS 名称。"
+                message = L10n.text("请输入被控 Mac 的 Tailscale IP 或 MagicDNS 名称。")
                 return
             }
             connectWithPassword(endpoint: endpoint, password: password, unattended: true,
                                 displayAddress: address.trimmingCharacters(in: .whitespacesAndNewlines))
         case .invalid:
-            message = "请输入 6 位临时密码、8 位以上固定密码或完整连接码。"
+            message = L10n.text("请输入 6 位临时密码、8 位以上固定密码或完整连接码。")
         }
     }
 
@@ -516,13 +516,13 @@ final class DesktopDirectService: ObservableObject {
         case .temporaryPassword(let temp):
             connectWithPassword(endpoint: endpoint, password: temp, unattended: false, displayAddress: display)
         default:
-            message = "请输入被控 Mac 上的 6 位临时密码或完整连接码。"
+            message = L10n.text("请输入被控 Mac 上的 6 位临时密码或完整连接码。")
         }
     }
 
     private func connectLegacy(endpoint: NWEndpoint, code value: String, displayAddress: String?) {
         guard !busy else { return }
-        guard let code = DesktopDirectCode(value) else { message = "请粘贴被控 Mac 上完整的连接码。"; return }
+        guard let code = DesktopDirectCode(value) else { message = L10n.text("请粘贴被控 Mac 上完整的连接码。"); return }
         stopReceiving()
         let socket = DesktopDirectTransport(NWConnection(to: endpoint,
             using: DesktopDirectIdentity.parameters(fingerprint: code.fingerprint)))
@@ -536,7 +536,7 @@ final class DesktopDirectService: ObservableObject {
             guard let self, let socket, self.transport === socket else { return }
             let reply = try JSONDecoder().decode(Reply.self, from: data)
             guard reply.version == 1, reply.id == id, let name = Self.name(reply.name) else {
-                throw CloudError("对方返回的直连信息无效或版本不一致。")
+                throw CloudError(L10n.text("对方返回的直连信息无效或版本不一致。"))
             }
             if let refusal = reply.refusal { throw CloudError(refusal) }
             let peer = DesktopPeer(id: UUID(), name: name)
@@ -546,7 +546,7 @@ final class DesktopDirectService: ObservableObject {
                 return nil
             }()
             guard self.open(socket, id: id, peer: peer, incoming: false, pairingKey: key, address: address) else {
-                throw CloudError("本机当前无法建立新连接。")
+                throw CloudError(L10n.text("本机当前无法建立新连接。"))
             }
             self.recordRecentPeer(address: address, name: name)
         }
@@ -564,7 +564,7 @@ final class DesktopDirectService: ObservableObject {
             normalizedPassword = password
         } else {
             guard let normalized = DesktopTemporaryPassword.normalize(password) else {
-                message = "请输入被控 Mac 上的 6 位连接密码。"
+                message = L10n.text("请输入被控 Mac 上的 6 位连接密码。")
                 return
             }
             normalizedPassword = normalized
@@ -584,10 +584,10 @@ final class DesktopDirectService: ObservableObject {
                 guard !Task.isCancelled else { return }
                 self.connectTask = nil
                 guard let host else {
-                    self.busy = false; self.message = "未找到可用的本机 Tailscale 地址，请确认 Tailscale 已连接。"; return
+                    self.busy = false; self.message = L10n.text("未找到可用的本机 Tailscale 地址，请确认 Tailscale 已连接。"); return
                 }
                 guard let resolved else {
-                    self.busy = false; self.message = "地址无法解析为可用的 Tailscale 地址，请使用被控 Mac 显示的 Tailscale 地址。"; return
+                    self.busy = false; self.message = L10n.text("地址无法解析为可用的 Tailscale 地址，请使用被控 Mac 显示的 Tailscale 地址。"); return
                 }
                 targetEndpoint = resolved
                 localTailscaleHost = host
@@ -611,10 +611,10 @@ final class DesktopDirectService: ObservableObject {
             socket.onReady = { [weak self, weak socket] in
                 guard let self, let socket, self.transport === socket else { return }
                 if unattended, !self.isTrustedRoute(socket.remoteEndpoint) {
-                    throw CloudError("固定密码无人值守连接需要通过 Tailscale 地址。")
+                    throw CloudError(L10n.text("固定密码无人值守连接需要通过 Tailscale 地址。"))
                 }
                 guard let fingerprint = socket.peerCertificateFingerprint, fingerprint.count == 32 else {
-                    throw CloudError("无法验证对方的加密证书指纹。")
+                    throw CloudError(L10n.text("无法验证对方的加密证书指纹。"))
                 }
                 certFingerprint = fingerprint
                 try socket.send(PAKEInit(mode: mode, id: id))
@@ -630,7 +630,7 @@ final class DesktopDirectService: ObservableObject {
                       challenge.nonce.count == 16, challenge.salt.count == 16, challenge.hostShare.count == 32,
                       DesktopDirectPassword.kdfBounds(for: mode).contains(challenge.rounds),
                       let fingerprint = certFingerprint else {
-                    throw CloudError("对方返回的密钥交换信息无效。")
+                    throw CloudError(L10n.text("对方返回的密钥交换信息无效。"))
                 }
                 let prs: Data
                 if unattended {
@@ -653,12 +653,12 @@ final class DesktopDirectService: ObservableObject {
                     guard let self, let socket, self.transport === socket else { return }
                     let reply = try JSONDecoder().decode(Reply.self, from: replyData)
                     guard reply.version == 2, reply.id == id, let name = Self.name(reply.name) else {
-                        throw CloudError("对方返回的直连确认信息无效。")
+                        throw CloudError(L10n.text("对方返回的直连确认信息无效。"))
                     }
                     if let refusal = reply.refusal { throw CloudError(refusal) }
                     guard let hostConfirm = reply.hostConfirm,
                           DesktopDirectPAKE.constantTimeEqual(hostConfirm, expectedHostConfirm) else {
-                        throw CloudError("连接密码校验未通过，无法确认对方身份。")
+                        throw CloudError(L10n.text("连接密码校验未通过，无法确认对方身份。"))
                     }
                     let peer = DesktopPeer(id: UUID(), name: name)
                     let key = try reply.device?.verifiedKey(id: id, fingerprint: fingerprint, role: "host")
@@ -668,7 +668,7 @@ final class DesktopDirectService: ObservableObject {
                     }()
                     guard self.open(socket, id: id, peer: peer, incoming: false, pairingKey: key,
                                     address: recordedAddress, unattended: unattended) else {
-                        throw CloudError("本机当前无法建立新连接。")
+                        throw CloudError(L10n.text("本机当前无法建立新连接。"))
                     }
                     self.recordRecentPeer(address: recordedAddress, name: name)
                 }
@@ -681,7 +681,7 @@ final class DesktopDirectService: ObservableObject {
 
     func cancelConnection() {
         connectTask?.cancel(); connectTask = nil
-        if let transport { transport.cancel("已取消直连。") }
+        if let transport { transport.cancel(L10n.text("已取消直连。")) }
         else { busy = false }
     }
 
@@ -699,13 +699,13 @@ final class DesktopDirectService: ObservableObject {
         socket.onClose = { [weak self] _ in self?.pending.removeValue(forKey: slot) }
         socket.onFrame = { [weak self, weak socket] data in
             guard let self, let socket, self.pending[slot] === socket, let reception = self.reception,
-                  Date() < reception.expires, !self.busy else { throw CloudError("连接码已过期或本机正忙。") }
+                  Date() < reception.expires, !self.busy else { throw CloudError(L10n.text("连接码已过期或本机正忙。")) }
             let probe = try JSONDecoder().decode(VersionProbe.self, from: data)
             if probe.version == 1 {
                 let hello = try JSONDecoder().decode(Hello.self, from: data)
                 guard let name = Self.name(hello.name), let proof = hello.proof,
                       reception.code.verifies(proof, for: hello.id) else {
-                    throw CloudError("直连验证失败。")
+                    throw CloudError(L10n.text("直连验证失败。"))
                 }
                 self.pending.removeValue(forKey: slot)
                 let peer = DesktopPeer(id: UUID(), name: name)
@@ -713,19 +713,19 @@ final class DesktopDirectService: ObservableObject {
                 let key = try hello.device?.verifiedKey(id: hello.id, fingerprint: reception.code.fingerprint, role: "viewer")
                 let accepted = self.open(socket, id: hello.id, peer: peer, incoming: true, pairingKey: device == nil ? nil : key)
                 try socket.send(Reply(id: hello.id, name: self.deviceName,
-                                      refusal: accepted ? nil : "被控 Mac 当前正忙或屏幕已锁定。", device: device))
+                                      refusal: accepted ? nil : L10n.text("被控 Mac 当前正忙或屏幕已锁定。"), device: device))
                 if !accepted { socket.finish() }
                 else { self.stopReceiving() }
                 return
             }
 
-            guard probe.version == 2 else { throw CloudError("直连验证失败。") }
+            guard probe.version == 2 else { throw CloudError(L10n.text("直连验证失败。")) }
             let initMsg = try JSONDecoder().decode(PAKEInit.self, from: data)
-            guard initMsg.auth == "pake", initMsg.mode == .temporary else { throw CloudError("直连验证失败。") }
+            guard initMsg.auth == "pake", initMsg.mode == .temporary else { throw CloudError(L10n.text("直连验证失败。")) }
             if let remaining = self.temporaryLimiter.remainingLockout() {
                 self.pending.removeValue(forKey: slot)
                 try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                      refusal: "临时密码错误次数过多，请 \(remaining) 秒后重试。"))
+                                      refusal: L10n.text("临时密码错误次数过多，请 \(remaining) 秒后重试。")))
                 socket.finish()
                 return
             }
@@ -738,15 +738,15 @@ final class DesktopDirectService: ObservableObject {
 
             socket.onFrame = { [weak self, weak socket] authData in
                 guard let self, let socket, self.pending[slot] === socket, let reception = self.reception,
-                      Date() < reception.expires, !self.busy else { throw CloudError("连接已过期或本机正忙。") }
+                      Date() < reception.expires, !self.busy else { throw CloudError(L10n.text("连接已过期或本机正忙。")) }
                 let auth = try JSONDecoder().decode(PAKEAuth.self, from: authData)
                 guard auth.version == 2, auth.id == initMsg.id, let name = Self.name(auth.name) else {
-                    throw CloudError("直连验证数据无效。")
+                    throw CloudError(L10n.text("直连验证数据无效。"))
                 }
                 if let remaining = self.temporaryLimiter.remainingLockout() {
                     self.pending.removeValue(forKey: slot)
                     try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                          refusal: "临时密码错误次数过多，请 \(remaining) 秒后重试。"))
+                                          refusal: L10n.text("临时密码错误次数过多，请 \(remaining) 秒后重试。")))
                     socket.finish()
                     return
                 }
@@ -758,9 +758,9 @@ final class DesktopDirectService: ObservableObject {
                         let nextPassword = DesktopTemporaryPassword.generate()
                         self.reception?.temporaryPassword = nextPassword
                         self.temporaryPassword = nextPassword
-                        refusal = "连接密码错误次数过多，本机临时密码已自动更换，请 60 秒后重试。"
+                        refusal = L10n.text("连接密码错误次数过多，本机临时密码已自动更换，请 60 秒后重试。")
                     } else {
-                        refusal = "连接密码错误（剩余 \(result.remainingAttempts) 次机会）。"
+                        refusal = L10n.text("连接密码错误（剩余 \(result.remainingAttempts) 次机会）。")
                     }
                     try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName, refusal: refusal))
                     socket.finish()
@@ -774,7 +774,7 @@ final class DesktopDirectService: ObservableObject {
                 let accepted = self.open(socket, id: initMsg.id, peer: peer, incoming: true,
                                          pairingKey: device == nil ? nil : key, unattended: false)
                 try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                      refusal: accepted ? nil : "被控 Mac 当前正忙或屏幕已锁定。",
+                                      refusal: accepted ? nil : L10n.text("被控 Mac 当前正忙或屏幕已锁定。"),
                                       device: device, hostConfirm: hostConfirm))
                 if !accepted { socket.finish() }
                 else { self.stopReceiving() }
@@ -815,7 +815,7 @@ final class DesktopDirectService: ObservableObject {
             guard let self, let socket, self.transport === socket else { return }
             var signal = try JSONDecoder().decode(DesktopSignal.self, from: data)
             let allowed = incoming ? ["offer", "candidate", "end"] : ["accept", "reject", "answer", "candidate", "end"]
-            guard signal.id == id, allowed.contains(signal.type) else { throw CloudError("收到不属于本次连接的直连信令。") }
+            guard signal.id == id, allowed.contains(signal.type) else { throw CloudError(L10n.text("收到不属于本次连接的直连信令。")) }
             signal.from = peer.id
             if !incoming, signal.type == "accept", signal.payload?.paired == true, let pairingKey {
                 _ = self.remember(pairingKey, name: peer.name, incoming: false, address: address)
@@ -866,14 +866,14 @@ final class DesktopDirectService: ObservableObject {
     func setUnattended(_ enabled: Bool) {
         unattendedEnabled = enabled
         defaults?.set(enabled, forKey: "taoscreen.direct.unattended")
-        if !enabled, trustedSessionIncoming { center.disconnect("本机已关闭免登录无人值守。") }
+        if !enabled, trustedSessionIncoming { center.disconnect(L10n.text("本机已关闭免登录无人值守。")) }
         refreshTrustedHosting()
     }
 
     func updateGrant(_ grant: DesktopTrustedGrant?, for key: Data) {
         guard let index = trustedDevices.firstIndex(where: { $0.publicKey == key && $0.canRequest }),
               trustedDevices[index].grant != grant else { return }
-        if trustedSessionIncoming, trustedSessionKey == key { center.disconnect("本机已更改该设备的无人值守授权。") }
+        if trustedSessionIncoming, trustedSessionKey == key { center.disconnect(L10n.text("本机已更改该设备的无人值守授权。")) }
         var devices = trustedDevices
         devices[index].grant = grant
         guard persist(devices) else { setUnattended(false); return }
@@ -881,7 +881,7 @@ final class DesktopDirectService: ObservableObject {
     }
 
     func removeTrustedDevice(_ key: Data) {
-        if trustedSessionKey == key { center.disconnect("本机已移除该设备的直连授权。") }
+        if trustedSessionKey == key { center.disconnect(L10n.text("本机已移除该设备的直连授权。")) }
         guard persist(trustedDevices.filter { $0.publicKey != key }) else { setUnattended(false); return }
         refreshTrustedHosting()
     }
@@ -900,10 +900,10 @@ final class DesktopDirectService: ObservableObject {
             guard !Task.isCancelled else { return }
             self.connectTask = nil
             guard let host, self.trustedDevices.contains(where: { $0.publicKey == key && $0.canConnect }) else {
-                self.busy = false; self.message = "未找到可用的本机 Tailscale 地址或该设备已被移除。"; return
+                self.busy = false; self.message = L10n.text("未找到可用的本机 Tailscale 地址或该设备已被移除。"); return
             }
             guard let resolved else {
-                self.busy = false; self.message = "地址无法解析为可用的 Tailscale 地址，请使用被控 Mac 显示的接收地址。"; return
+                self.busy = false; self.message = L10n.text("地址无法解析为可用的 Tailscale 地址，请使用被控 Mac 显示的接收地址。"); return
             }
             do {
                 let identity = try DesktopDirectIdentity(deviceKey: self.getDeviceKey())
@@ -915,18 +915,18 @@ final class DesktopDirectService: ObservableObject {
                 socket.onClose = { [weak self, weak socket] reason in self?.closed(socket, id: id, reason: reason) }
                 socket.onReady = { [weak self, weak socket] in
                     guard let self, let socket, self.isTrustedRoute(socket.remoteEndpoint) else {
-                        throw CloudError("无人值守连接需要通过 Tailscale 地址。")
+                        throw CloudError(L10n.text("无人值守连接需要通过 Tailscale 地址。"))
                     }
                     try socket.send(Hello(id: id, name: self.deviceName))
                 }
                 socket.onFrame = { [weak self, weak socket] data in
                     guard let self, let socket, self.transport === socket else { return }
                     let reply = try JSONDecoder().decode(Reply.self, from: data)
-                    guard reply.version == 1, reply.id == id else { throw CloudError("对方返回的无人值守信息无效。") }
+                    guard reply.version == 1, reply.id == id else { throw CloudError(L10n.text("对方返回的无人值守信息无效。")) }
                     if let refusal = reply.refusal { throw CloudError(refusal) }
                     guard self.trustedDevices.contains(where: { $0.publicKey == key && $0.canConnect }),
                           self.open(socket, id: id, peer: .init(id: UUID(), name: trusted.name), incoming: false,
-                                    unattendedKey: key, unattended: true) else { throw CloudError("本机当前无法建立无人值守连接。") }
+                                    unattendedKey: key, unattended: true) else { throw CloudError(L10n.text("本机当前无法建立无人值守连接。")) }
                     _ = self.remember(key, name: trusted.name, incoming: false, address: address)
                     self.recordRecentPeer(address: address, name: trusted.name)
                 }
@@ -937,7 +937,7 @@ final class DesktopDirectService: ObservableObject {
 
     private func getDeviceKey() throws -> P256.Signing.PrivateKey {
         if let deviceKey { return deviceKey }
-        guard let store else { throw CloudError("本机设备身份不可用。") }
+        guard let store else { throw CloudError(L10n.text("本机设备身份不可用。")) }
         let key: P256.Signing.PrivateKey
         if let data = try store.read("key") {
             key = try P256.Signing.PrivateKey(rawRepresentation: data)
@@ -987,11 +987,11 @@ final class DesktopDirectService: ObservableObject {
     private func refreshTrustedHosting() {
         trustedTask?.cancel(); trustedTask = nil
         stopTrustedListener()
-        guard unattendedEnabled else { unattendedStatus = "无人值守已关闭"; return }
+        guard unattendedEnabled else { unattendedStatus = L10n.text("无人值守已关闭"); return }
         guard trustedDevices.contains(where: { $0.canRequest && $0.grant != nil }) else {
-            unattendedStatus = "请为一台已配对设备授予无人值守权限"; return
+            unattendedStatus = L10n.text("请为一台已配对设备授予无人值守权限"); return
         }
-        unattendedStatus = "正在检查 Tailscale 连接…"
+        unattendedStatus = L10n.text("正在检查 Tailscale 连接…")
         trustedTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -999,11 +999,11 @@ final class DesktopDirectService: ObservableObject {
                 guard !Task.isCancelled else { return }
                 if self.trustedHost != host || self.trustedListener == nil {
                     if self.trustedSessionIncoming, self.trustedHost != nil, self.trustedHost != host {
-                        self.center.disconnect("Tailscale 接收地址已改变，共享已停止。")
+                        self.center.disconnect(L10n.text("Tailscale 接收地址已改变，共享已停止。"))
                     }
                     self.stopTrustedListener()
                     if let host { self.listenForTrustedDevices(on: host) }
-                    else { self.unattendedStatus = "未检测到 Tailscale 地址，请检查 Tailscale 是否已连接及其命令行工具是否可用。" }
+                    else { self.unattendedStatus = L10n.text("未检测到 Tailscale 地址，请检查 Tailscale 是否已连接及其命令行工具是否可用。") }
                 }
                 do { try await Task.sleep(for: .seconds(12)) } catch { return }
             }
@@ -1024,12 +1024,12 @@ final class DesktopDirectService: ObservableObject {
                     switch state {
                     case .ready:
                         self.trustedListenerReady = true
-                        self.unattendedStatus = "正在通过 Tailscale 接收已授权设备 · \(host):\(listener.port?.rawValue ?? self.trustedPort.rawValue)"
+                        self.unattendedStatus = L10n.text("正在通过 Tailscale 接收已授权设备 · \(host):\(listener.port?.rawValue ?? self.trustedPort.rawValue)")
                         self.updateUnattendedAvailability()
                     case .failed(let error), .waiting(let error):
-                        if self.trustedSessionIncoming { self.center.disconnect("Tailscale 无人值守接收已中断。") }
+                        if self.trustedSessionIncoming { self.center.disconnect(L10n.text("Tailscale 无人值守接收已中断。")) }
                         self.stopTrustedListener()
-                        self.unattendedStatus = "无法开启 Tailscale 接收：\(error.localizedDescription)"
+                        self.unattendedStatus = L10n.text("无法开启 Tailscale 接收：\(error.localizedDescription)")
                     default: break
                     }
                 }
@@ -1063,16 +1063,16 @@ final class DesktopDirectService: ObservableObject {
             guard let self, let socket, self.trustedPending[slot] === socket, !self.busy,
                   let key = socket.peerPublicKey, self.grant(for: key) != nil,
                   let trusted = self.trustedDevices.first(where: { $0.publicKey == key }) else {
-                throw CloudError("设备的无人值守授权已失效。")
+                throw CloudError(L10n.text("设备的无人值守授权已失效。"))
             }
             let hello = try JSONDecoder().decode(Hello.self, from: data)
-            guard hello.version == 1, hello.proof == nil, hello.device == nil else { throw CloudError("无效的无人值守请求。") }
+            guard hello.version == 1, hello.proof == nil, hello.device == nil else { throw CloudError(L10n.text("无效的无人值守请求。")) }
             self.trustedPending.removeValue(forKey: slot)
             let accepted = self.open(socket, id: hello.id, peer: .init(id: UUID(), name: trusted.name), incoming: true,
                                      unattendedKey: key, unattended: true)
             if accepted { self.stopReceiving() }
             try socket.send(Reply(id: hello.id, name: self.deviceName,
-                                 refusal: accepted ? nil : "被控 Mac 当前正忙、权限不足或无活动用户会话。"))
+                                 refusal: accepted ? nil : L10n.text("被控 Mac 当前正忙、权限不足或无活动用户会话。")))
             if !accepted { socket.finish() }
         }
         socket.start()
@@ -1085,7 +1085,7 @@ final class DesktopDirectService: ObservableObject {
             return false
         }
         guard let store else {
-            message = "本机钥匙串不可用，无法保存固定访问密码。"
+            message = L10n.text("本机钥匙串不可用，无法保存固定访问密码。")
             return false
         }
         do {
@@ -1098,7 +1098,7 @@ final class DesktopDirectService: ObservableObject {
             hasUnattendedPassword = true
             fixedPasswordLimiter.recordSuccess()
             if fixedPasswordSessionIncoming {
-                center.disconnect("固定访问密码已更改，共享已停止。")
+                center.disconnect(L10n.text("固定访问密码已更改，共享已停止。"))
             }
             if !unattendedPasswordSettings.enabled {
                 var next = unattendedPasswordSettings
@@ -1126,7 +1126,7 @@ final class DesktopDirectService: ObservableObject {
         hasUnattendedPassword = false
         fixedPasswordLimiter.recordSuccess()
         if fixedPasswordSessionIncoming {
-            center.disconnect("固定访问密码已清除，共享已停止。")
+            center.disconnect(L10n.text("固定访问密码已清除，共享已停止。"))
         }
         var next = unattendedPasswordSettings
         next.enabled = false
@@ -1140,7 +1140,7 @@ final class DesktopDirectService: ObservableObject {
             defaults?.set(data, forKey: Self.unattendedPasswordSettingsKey)
         }
         if fixedPasswordSessionIncoming && (!settings.enabled || settings.grant != previous.grant) {
-            center.disconnect("Tailscale 固定密码无人值守设置已更改，共享已停止。")
+            center.disconnect(L10n.text("Tailscale 固定密码无人值守设置已更改，共享已停止。"))
         }
         refreshUnattendedPasswordHosting()
     }
@@ -1160,14 +1160,14 @@ final class DesktopDirectService: ObservableObject {
         passwordTask?.cancel(); passwordTask = nil
         stopPasswordListener()
         guard unattendedPasswordSettings.enabled else {
-            unattendedPasswordStatus = "固定密码无人值守已关闭"
+            unattendedPasswordStatus = L10n.text("固定密码无人值守已关闭")
             return
         }
         guard unattendedPasswordVerifier != nil else {
-            unattendedPasswordStatus = "请先设置固定访问密码"
+            unattendedPasswordStatus = L10n.text("请先设置固定访问密码")
             return
         }
-        unattendedPasswordStatus = "正在检查 Tailscale 连接…"
+        unattendedPasswordStatus = L10n.text("正在检查 Tailscale 连接…")
         passwordTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -1175,11 +1175,11 @@ final class DesktopDirectService: ObservableObject {
                 guard !Task.isCancelled else { return }
                 if self.passwordHost != host || self.passwordListener == nil {
                     if self.fixedPasswordSessionIncoming, self.passwordHost != nil, self.passwordHost != host {
-                        self.center.disconnect("Tailscale 接收地址已改变，共享已停止。")
+                        self.center.disconnect(L10n.text("Tailscale 接收地址已改变，共享已停止。"))
                     }
                     self.stopPasswordListener()
                     if let host { self.listenForPasswordUnattended(on: host) }
-                    else { self.unattendedPasswordStatus = "未检测到 Tailscale 地址，请确认 Tailscale 已连接。" }
+                    else { self.unattendedPasswordStatus = L10n.text("未检测到 Tailscale 地址，请确认 Tailscale 已连接。") }
                 }
                 do { try await Task.sleep(for: .seconds(12)) } catch { return }
             }
@@ -1199,12 +1199,12 @@ final class DesktopDirectService: ObservableObject {
                     switch state {
                     case .ready:
                         self.passwordListenerReady = true
-                        self.unattendedPasswordStatus = "正在通过 Tailscale 接收固定密码连接 · \(host):\(listener.port?.rawValue ?? self.passwordPort.rawValue)"
+                        self.unattendedPasswordStatus = L10n.text("正在通过 Tailscale 接收固定密码连接 · \(host):\(listener.port?.rawValue ?? self.passwordPort.rawValue)")
                         self.updateUnattendedAvailability()
                     case .failed(let error), .waiting(let error):
-                        if self.fixedPasswordSessionIncoming { self.center.disconnect("Tailscale 固定密码接收已中断。") }
+                        if self.fixedPasswordSessionIncoming { self.center.disconnect(L10n.text("Tailscale 固定密码接收已中断。")) }
                         self.stopPasswordListener()
-                        self.unattendedPasswordStatus = "无法开启 Tailscale 固定密码接收：\(error.localizedDescription)"
+                        self.unattendedPasswordStatus = L10n.text("无法开启 Tailscale 固定密码接收：\(error.localizedDescription)")
                     default: break
                     }
                 }
@@ -1243,16 +1243,16 @@ final class DesktopDirectService: ObservableObject {
                   self.unattendedPasswordSettings.enabled,
                   let verifier = self.unattendedPasswordVerifier,
                   let identity = self.passwordIdentity else {
-                throw CloudError("本机尚未启用 Tailscale 固定密码无人值守。")
+                throw CloudError(L10n.text("本机尚未启用 Tailscale 固定密码无人值守。"))
             }
             let initMsg = try JSONDecoder().decode(PAKEInit.self, from: data)
             guard initMsg.version == 2, initMsg.auth == "pake", initMsg.mode == .unattendedPassword else {
-                throw CloudError("无效的固定密码无人值守请求。")
+                throw CloudError(L10n.text("无效的固定密码无人值守请求。"))
             }
             if let remaining = self.fixedPasswordLimiter.remainingLockout() {
                 self.passwordPending.removeValue(forKey: slot)
                 try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                      refusal: "固定密码错误次数过多，请 \(remaining) 秒后重试。"))
+                                      refusal: L10n.text("固定密码错误次数过多，请 \(remaining) 秒后重试。")))
                 socket.finish()
                 return
             }
@@ -1265,16 +1265,16 @@ final class DesktopDirectService: ObservableObject {
             socket.onFrame = { [weak self, weak socket] authData in
                 guard let self, let socket, self.passwordPending[slot] === socket, !self.busy,
                       self.unattendedPasswordSettings.enabled, self.unattendedPasswordVerifier != nil else {
-                    throw CloudError("固定密码无人值守状态已变更。")
+                    throw CloudError(L10n.text("固定密码无人值守状态已变更。"))
                 }
                 let auth = try JSONDecoder().decode(PAKEAuth.self, from: authData)
                 guard auth.version == 2, auth.id == initMsg.id, let name = Self.name(auth.name) else {
-                    throw CloudError("无效的无人值守验证信息。")
+                    throw CloudError(L10n.text("无效的无人值守验证信息。"))
                 }
                 if let remaining = self.fixedPasswordLimiter.remainingLockout() {
                     self.passwordPending.removeValue(forKey: slot)
                     try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                          refusal: "固定密码错误次数过多，请 \(remaining) 秒后重试。"))
+                                          refusal: L10n.text("固定密码错误次数过多，请 \(remaining) 秒后重试。")))
                     socket.finish()
                     return
                 }
@@ -1282,8 +1282,8 @@ final class DesktopDirectService: ObservableObject {
                     self.passwordPending.removeValue(forKey: slot)
                     let result = self.fixedPasswordLimiter.recordFailure()
                     let refusal = result.lockedOut
-                        ? "固定访问密码错误次数过多，已锁定 60 秒后重试。"
-                        : "固定访问密码错误（剩余 \(result.remainingAttempts) 次机会）。"
+                        ? L10n.text("固定访问密码错误次数过多，已锁定 60 秒后重试。")
+                        : L10n.text("固定访问密码错误（剩余 \(result.remainingAttempts) 次机会）。")
                     try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName, refusal: refusal))
                     socket.finish()
                     return
@@ -1295,7 +1295,7 @@ final class DesktopDirectService: ObservableObject {
                                          authorizedGrant: { [weak self] in self?.currentUnattendedPasswordGrant() })
                 if accepted { self.stopReceiving() }
                 try socket.send(Reply(version: 2, id: initMsg.id, name: self.deviceName,
-                                      refusal: accepted ? nil : "被控 Mac 当前正忙、权限不足或无活动用户会话。",
+                                      refusal: accepted ? nil : L10n.text("被控 Mac 当前正忙、权限不足或无活动用户会话。"),
                                       hostConfirm: hostConfirm))
                 if !accepted { socket.finish() }
             }

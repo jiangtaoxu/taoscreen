@@ -9,10 +9,10 @@ enum DesktopPrivacyPreset: String, CaseIterable, Identifiable, Codable {
     case charcoal, midnight, forest
     var id: String { rawValue }
     var name: String {
-        switch self { case .charcoal: "深灰 · 隐私保护"; case .midnight: "深蓝 · 远程办公"; case .forest: "墨绿 · 请勿打扰" }
+        switch self { case .charcoal: L10n.text("深灰 · 隐私保护"); case .midnight: L10n.text("深蓝 · 远程办公"); case .forest: L10n.text("墨绿 · 请勿打扰") }
     }
     var title: String {
-        switch self { case .charcoal: "隐私屏已开启"; case .midnight: "正在远程办公"; case .forest: "专注时间，请勿打扰" }
+        switch self { case .charcoal: L10n.text("隐私屏已开启"); case .midnight: L10n.text("正在远程办公"); case .forest: L10n.text("专注时间，请勿打扰") }
     }
     var color: Color {
         switch self {
@@ -94,12 +94,12 @@ final class DesktopPrivacyLibrary: ObservableObject {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try JSONEncoder().encode(next).write(to: settingsURL, options: .atomic)
             settings = next; error = nil; onChange?(); return true
-        } catch { self.error = "无法保存隐私屏设置：\(error.localizedDescription)"; return false }
+        } catch { self.error = L10n.text("无法保存隐私屏设置：\(error.localizedDescription)"); return false }
     }
 
     func importImages(_ urls: [URL]) async {
         guard !importing else { return }
-        guard settings.images.count + urls.count <= 20 else { error = "最多保存 20 张自定义图片。"; return }
+        guard settings.images.count + urls.count <= 20 else { error = L10n.text("最多保存 20 张自定义图片。"); return }
         importing = true; error = nil
         defer { importing = false }
         for url in urls {
@@ -111,7 +111,7 @@ final class DesktopPrivacyLibrary: ObservableObject {
                 try data.write(to: destination, options: .atomic)
                 var next = settings; next.images.append(item); next.selection = item.selectionID
                 if !save(next) { try? FileManager.default.removeItem(at: destination); return }
-            } catch { self.error = "无法导入「\(url.lastPathComponent)」：\(error.localizedDescription)"; return }
+            } catch { self.error = L10n.text("无法导入「\(url.lastPathComponent)」：\(error.localizedDescription)"); return }
         }
     }
 }
@@ -122,18 +122,18 @@ enum DesktopPrivacyImageImport {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let values = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
         guard values.isRegularFile == true, let size = values.fileSize, size > 0, size <= 20 * 1024 * 1024 else {
-            throw CloudError("请选择不超过 20 MB 的图片文件。")
+            throw CloudError(L10n.text("请选择不超过 20 MB 的图片文件。"))
         }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceThumbnailMaxPixelSize: 3840
-              ] as CFDictionary) else { throw CloudError("图片格式无效或内容已损坏。") }
+              ] as CFDictionary) else { throw CloudError(L10n.text("图片格式无效或内容已损坏。")) }
         let data = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else { throw CloudError("无法转换图片。") }
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else { throw CloudError(L10n.text("无法转换图片。")) }
         CGImageDestinationAddImage(destination, image, nil)
-        guard CGImageDestinationFinalize(destination) else { throw CloudError("无法保存图片。") }
+        guard CGImageDestinationFinalize(destination) else { throw CloudError(L10n.text("无法保存图片。")) }
         return data as Data
     }
 }
@@ -168,11 +168,11 @@ struct DesktopPrivacyArtwork: View {
                 }
                 VStack(spacing: compact ? 5 : 18) {
                     Image(systemName: "lock.display").font(.system(size: compact ? 18 : 48, weight: .light))
-                    Text(image == nil ? preset.title : "隐私屏已开启")
+                    Text(image == nil ? preset.title : L10n.text("隐私屏已开启"))
                         .font(.system(size: compact ? 11 : 32, weight: .semibold))
                     if !compact {
-                        Text("此电脑正在通过 TaoScreen 远程使用").font(.title3).foregroundStyle(.white.opacity(0.8))
-                        Text("本机键鼠仍可使用 · 按 ⌃⌥⇧Esc 退出隐私屏")
+                        Text(L10n.text("此电脑正在通过 TaoScreen 远程使用")).font(.title3).foregroundStyle(.white.opacity(0.8))
+                        Text(L10n.text("本机键鼠仍可使用 · 按 ⌃⌥⇧Esc 退出隐私屏"))
                             .font(.callout).foregroundStyle(.white.opacity(0.65)).padding(.top, 12)
                     }
                 }.foregroundStyle(.white).padding(compact ? 8 : 32)
@@ -197,7 +197,7 @@ final class DesktopPrivacyCurtain {
 
     func show(preset: DesktopPrivacyPreset, image: NSImage?, screens: [NSScreen] = NSScreen.screens,
               present: Bool = true) throws {
-        guard !screens.isEmpty else { throw CloudError("没有可遮挡的显示器。") }
+        guard !screens.isEmpty else { throw CloudError(L10n.text("没有可遮挡的显示器。")) }
         if hotKey == nil { try installEmergencyExit() }
         // 保留原窗口，避免更换样式时短暂露出桌面；只为新增屏幕创建窗口。
         while windows.count < screens.count {
@@ -235,7 +235,7 @@ final class DesktopPrivacyCurtain {
         let registered = installed == noErr ? RegisterEventHotKey(UInt32(kVK_Escape), UInt32(controlKey | optionKey | shiftKey),
             EventHotKeyID(signature: 0x42525056, id: 1), GetApplicationEventTarget(), 0, &hotKey) : installed
         guard registered == noErr else {
-            stop(); throw CloudError("无法注册隐私屏退出快捷键 ⌃⌥⇧Esc，请检查快捷键冲突后重试。")
+            stop(); throw CloudError(L10n.text("无法注册隐私屏退出快捷键 ⌃⌥⇧Esc，请检查快捷键冲突后重试。"))
         }
     }
 

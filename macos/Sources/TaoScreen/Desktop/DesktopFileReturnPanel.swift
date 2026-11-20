@@ -233,36 +233,36 @@ final class DesktopFileReturnPanel {
                 switch model.stage {
                 case .hidden: EmptyView()
                 case .drop:
-                    Label("拖到这里，发送到控制端", systemImage: "arrow.up.doc")
+                    Label(L10n.text("拖到这里，发送到控制端"), systemImage: "arrow.up.doc")
                         .font(.headline)
-                    Text("松开后确认发送").foregroundStyle(.secondary)
+                    Text(L10n.text("松开后确认发送")).foregroundStyle(.secondary)
                 case .confirm(let urls, let retry):
-                    Label("发送到 \(model.peer)", systemImage: "arrow.up.doc").font(.headline).lineLimit(1)
+                    Label(L10n.text("发送到 \(model.peer)"), systemImage: "arrow.up.doc").font(.headline).lineLimit(1)
                     if let first = urls.first {
-                        Text(urls.count == 1 ? first.lastPathComponent : "\(first.lastPathComponent) 等 \(urls.count) 项")
+                        Text(urls.count == 1 ? first.lastPathComponent : L10n.text("\(first.lastPathComponent) 等 \(urls.count) 项"))
                             .lineLimit(1).truncationMode(.middle)
                     }
-                    Text(retry ? "文件通道暂不可用，请重试" : "保存到 下载 / TaoScreen")
+                    Text(retry ? L10n.text("文件通道暂不可用，请重试") : L10n.text("保存到 下载 / TaoScreen"))
                         .foregroundStyle(retry ? Color.orange : .secondary)
                     HStack {
                         Spacer()
-                        Button("取消", action: dismiss)
-                        Button("发送", action: confirm).buttonStyle(.borderedProminent)
+                        Button(L10n.text("取消"), action: dismiss)
+                        Button(L10n.text("发送"), action: confirm).buttonStyle(.borderedProminent)
                     }
                 case .transfer(let state):
                     HStack {
-                        Label(state.active ? "正在发送到控制端" : title(state.phase),
+                        Label(state.active ? L10n.text("正在发送到控制端") : title(state.phase),
                               systemImage: state.active ? "arrow.up.doc" : state.phase == .completed ? "checkmark.circle.fill" : "info.circle")
                             .font(.headline)
                         Spacer()
-                        if state.active { Button("取消", action: cancel) }
-                        else { Button(action: dismiss) { Image(systemName: "xmark") }.buttonStyle(.borderless).help("关闭") }
+                        if state.active { Button(L10n.text("取消"), action: cancel) }
+                        else { Button(action: dismiss) { Image(systemName: "xmark") }.buttonStyle(.borderless).help(L10n.text("关闭")) }
                     }
                     Text(state.message).lineLimit(2).truncationMode(.middle)
                     if state.active {
                         if let progress = state.progress {
                             HStack {
-                                ProgressView(value: progress).accessibilityLabel("文件发送进度")
+                                ProgressView(value: progress).accessibilityLabel(L10n.text("文件发送进度"))
                                 Text(progress, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                             }
                         } else { ProgressView().controlSize(.small) }
@@ -283,10 +283,10 @@ final class DesktopFileReturnPanel {
 
         private func title(_ phase: DesktopTransferState.Phase) -> String {
             switch phase {
-            case .completed: "发送完成"
-            case .cancelled: "已取消"
-            case .failed: "发送失败"
-            default: "请在控制端确认"
+            case .completed: L10n.text("发送完成")
+            case .cancelled: L10n.text("已取消")
+            case .failed: L10n.text("发送失败")
+            default: L10n.text("请在控制端确认")
             }
         }
     }

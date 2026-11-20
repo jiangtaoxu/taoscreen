@@ -14,7 +14,7 @@ struct DesktopConnectionInfoTests {
         ]
         let result = DesktopConnectionAddresses.selected(statistics: statistics)
         #expect(result.local?.ip == "192.0.2.10" && result.local?.relayed == false)
-        #expect(result.remote?.description == "2001:db8::20（中继）")
+        #expect(result.remote?.description == "2001:db8::20" + L10n.text("（中继）"))
         for missing in ["", "hidden.local", "192.0.2.999", "not-an-ip"] {
             statistics["remote"]?.values["address"] = missing as NSString
             #expect(DesktopConnectionAddresses.selected(statistics: statistics).remote == nil)

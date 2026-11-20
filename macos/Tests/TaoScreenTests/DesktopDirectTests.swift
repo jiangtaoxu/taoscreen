@@ -218,7 +218,7 @@ struct DesktopDirectTests {
         viewer.connectTrusted(hostRecord.publicKey, address: address)
         try await wait("已授权设备通过 TLS 后检查权限") { !viewer.busy }
         // 双向 TLS 验证成功后进入 macOS 权限检查，并通过信令说明拒绝原因。
-        #expect(viewer.center.message?.contains("屏幕录制") == true && permissionChecks > before)
+        #expect(viewer.center.message?.contains(DesktopPermission.screenRecording.title) == true && permissionChecks > before)
         #expect(viewer.center.viewerSessions.isEmpty && !host.center.isHost)
         host.updateGrant(nil, for: viewerRecord.publicKey)
         #expect(host.unattendedListeningPort == nil)
@@ -334,7 +334,7 @@ struct DesktopDirectTests {
             #expect(host.center.invitation == nil)
         }
         try await wait("触发限流后自动更换临时密码") { host.temporaryPassword != initialPassword }
-        #expect(viewer.message?.contains("60 秒") == true)
+        #expect(viewer.message?.contains(L10n.text("连接密码错误次数过多，本机临时密码已自动更换，请 60 秒后重试。")) == true)
 
         // 新主机实例验证正确 6 位临时密码能正常建立连接确认。
         let host2 = DesktopDirectService(center: DesktopCenter(isDirect: true), port: .any,
@@ -387,14 +387,14 @@ struct DesktopDirectTests {
 
         viewer.connect(address: address, credential: "WrongServerPass#99")
         try await wait("错误固定密码被拒") { !viewer.busy }
-        #expect(viewer.message?.contains("错误") == true && permissionChecks == before)
+        #expect(viewer.message?.contains(L10n.text("固定访问密码错误（剩余 \(4) 次机会）。")) == true && permissionChecks == before)
         #expect(!host.center.isHost && host.center.invitation == nil)
 
         viewer.connect(address: address, credential: "ServerPass#2026")
         try await wait("正确固定密码通过认证并进入权限检查") { !viewer.busy }
         #expect(permissionChecks > before)
         #expect(host.center.permissions.requester != nil)
-        #expect(viewer.center.message?.contains("屏幕录制") == true)
+        #expect(viewer.center.message?.contains(DesktopPermission.screenRecording.title) == true)
         #expect(viewer.center.viewerSessions.isEmpty && !host.center.isHost)
 
         host.clearUnattendedPassword()

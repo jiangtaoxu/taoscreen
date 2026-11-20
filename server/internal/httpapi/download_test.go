@@ -52,3 +52,39 @@ func TestDownloadPagePublicAndIsolated(t *testing.T) {
 		}
 	}
 }
+
+func TestDownloadPageLanguagePreference(t *testing.T) {
+	handler := (&Server{}).Handler()
+	get := func(path, acceptLanguage, locale string, cookie *http.Cookie) *httptest.ResponseRecorder {
+		t.Helper()
+		request := httptest.NewRequest(http.MethodGet, path, nil)
+		request.Header.Set("Accept-Language", acceptLanguage)
+		if cookie != nil {
+			request.AddCookie(cookie)
+		}
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		result := response.Header()
+		if response.Code != http.StatusOK || result.Get("Content-Language") != locale ||
+			!strings.Contains(response.Body.String(), `<html lang="`+locale+`">`) {
+			t.Fatalf("下载页语言应为 %s，HTTP %d，Content-Language %s", locale, response.Code, result.Get("Content-Language"))
+		}
+		return response
+	}
+
+	get("/download", "fr-FR, zh-TW;q=0.8, en;q=0.7", "zh-Hans", nil)
+	english := get("/download?lang=en", "zh-CN", "en", nil)
+	if !strings.Contains(english.Body.String(), "Download for macOS") {
+		t.Fatal("英文下载页未渲染英文文案")
+	}
+	prefs := english.Result().Cookies()
+	if len(prefs) != 1 || prefs[0].Name != webLanguageCookie || prefs[0].Value != "en" {
+		t.Fatal("手动选择英文后应保存语言")
+	}
+	get("/download", "zh-CN", "en", prefs[0])
+	reset := get("/download?lang=system", "zh-TW", "zh-Hans", prefs[0]).Result().Cookies()
+	if len(reset) != 1 || reset[0].MaxAge >= 0 {
+		t.Fatal("恢复跟随系统时应清除语言选项")
+	}
+	get("/download", "ja-JP", "en", nil)
+}

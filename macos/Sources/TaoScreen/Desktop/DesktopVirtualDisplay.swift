@@ -17,7 +17,7 @@ enum DesktopVirtualDisplayPreset: String, Codable, CaseIterable, Identifiable {
     }
 
     var hiDPI: Bool { self == .ultraHD }
-    var title: String { "虚拟屏 · \(dimensions.width) × \(dimensions.height)\(hiDPI ? "（HiDPI）" : "")" }
+    var title: String { L10n.text("虚拟屏 · \(dimensions.width) × \(dimensions.height)\(hiDPI ? "（HiDPI）" : "")") }
 }
 
 enum DesktopShareDisplay: Hashable {
@@ -42,7 +42,7 @@ final class DesktopVirtualDisplay {
         var id = kCGNullDirectDisplay
         let handle = autoreleasepool { TaoCreateVirtualDisplay(size.width, size.height, preset.hiDPI, &id) }
         guard let handle, id != kCGNullDirectDisplay else {
-            throw CloudError("无法创建 \(size.width) × \(size.height) 虚拟屏。当前 macOS 或显示器配置未能启用虚拟显示器。")
+            throw CloudError(L10n.text("无法创建 \(size.width) × \(size.height) 虚拟屏。当前 macOS 或显示器配置未能启用虚拟显示器。"))
         }
         self.id = id
         self.preset = preset
@@ -72,12 +72,12 @@ final class DesktopVirtualDisplay {
         }
         guard isCurrentSession() else { throw CancellationError() }
         if CGDisplayIsInMirrorSet(id) == 1 {
-            throw CloudError("macOS 将虚拟屏设为镜像，无法将其作为独立屏幕共享。")
+            throw CloudError(L10n.text("macOS 将虚拟屏设为镜像，无法将其作为独立屏幕共享。"))
         }
         if isExtended(id), !hasResolution(id, preset: preset) {
-            throw CloudError("macOS 未能启用所选的虚拟屏分辨率。")
+            throw CloudError(L10n.text("macOS 未能启用所选的虚拟屏分辨率。"))
         }
-        throw CloudError("macOS 未能及时将虚拟屏提供给屏幕采集。请在被控 Mac 检查显示器和录屏权限后重试。")
+        throw CloudError(L10n.text("macOS 未能及时将虚拟屏提供给屏幕采集。请在被控 Mac 检查显示器和录屏权限后重试。"))
     }
 
     private static func hasResolution(_ id: CGDirectDisplayID, preset: DesktopVirtualDisplayPreset) -> Bool {

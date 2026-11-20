@@ -48,11 +48,11 @@ public enum CloudJSON: Codable, Equatable, Sendable {
         return [:]
     }
     public func string(_ key: String) throws -> String {
-        guard case .string(let s) = fields[key] else { throw CloudError("服务字段 \(key) 无效。") }
+        guard case .string(let s) = fields[key] else { throw CloudError(L10n.text("服务字段 \(key) 无效。")) }
         return s
     }
     public func id(_ key: String) throws -> UUID {
-        guard let id = UUID(uuidString: try string(key)) else { throw CloudError("服务标识 \(key) 无效。") }
+        guard let id = UUID(uuidString: try string(key)) else { throw CloudError(L10n.text("服务标识 \(key) 无效。")) }
         return id
     }
     public func optionalString(_ key: String) throws -> String? {
@@ -65,12 +65,12 @@ public enum CloudJSON: Codable, Equatable, Sendable {
     }
     public func int(_ key: String) throws -> Int {
         guard case .number(let n) = fields[key], n.isFinite, n.rounded() == n, n >= 0, n < Double(Int.max) else {
-            throw CloudError("服务整数 \(key) 无效。")
+            throw CloudError(L10n.text("服务整数 \(key) 无效。"))
         }
         return Int(n)
     }
     public func flag(_ key: String) throws -> Bool {
-        guard case .bool(let b) = fields[key] else { throw CloudError("服务布尔值 \(key) 无效。") }
+        guard case .bool(let b) = fields[key] else { throw CloudError(L10n.text("服务布尔值 \(key) 无效。")) }
         return b
     }
     public func date(_ key: String) throws -> Date { try SyncCoding.date(string(key)) }
@@ -90,7 +90,7 @@ public enum SyncCoding {
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let d = f.date(from: value) { return d }
         f.formatOptions = [.withInternetDateTime]
-        guard let d = f.date(from: value) else { throw CloudError("服务器日期格式无效。") }
+        guard let d = f.date(from: value) else { throw CloudError(L10n.text("服务器日期格式无效。")) }
         return d
     }
     public static func timestamp(_ date: Date) -> CloudJSON {

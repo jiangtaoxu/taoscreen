@@ -26,7 +26,7 @@ struct DesktopPortUDPAddress {
     let bytes: Data
     let family: Int32
     init(endpoint: NWEndpoint) throws {
-        guard case .hostPort(let host, let port) = endpoint else { throw CloudError("无法确定 UDP 目标地址。") }
+        guard case .hostPort(let host, let port) = endpoint else { throw CloudError(L10n.text("无法确定 UDP 目标地址。")) }
         switch host {
         case .ipv4(let ip):
             var address = sockaddr_in()
@@ -40,7 +40,7 @@ struct DesktopPortUDPAddress {
             address.sin6_port = port.rawValue.bigEndian; address.sin6_scope_id = UInt32(ip.interface?.index ?? 0)
             _ = withUnsafeMutableBytes(of: &address.sin6_addr) { ip.rawValue.copyBytes(to: $0) }
             bytes = withUnsafeBytes(of: &address) { Data($0) }; family = AF_INET6
-        default: throw CloudError("UDP 目标尚未解析为明确的 IP 地址。")
+        default: throw CloudError(L10n.text("UDP 目标尚未解析为明确的 IP 地址。"))
         }
     }
     init(bytes: Data, family: Int32) { self.bytes = bytes; self.family = family }
@@ -85,12 +85,12 @@ final class DesktopPortUDPSocket {
         } else { receiver = completion }
     }
     func send(_ data: Data, completion: @escaping (String?) -> Void) {
-        guard !closed else { completion("UDP 会话已关闭。"); return }
+        guard !closed else { completion(L10n.text("UDP 会话已关闭。")); return }
         let count: Int
         if let descriptor {
             count = data.withUnsafeBytes { Darwin.send(descriptor.value, $0.baseAddress, $0.count, 0) }
         } else if let listener, let peer { count = listener.send(data, to: peer) }
-        else { completion("UDP 监听已停止。"); return }
+        else { completion(L10n.text("UDP 监听已停止。")); return }
         let error = count == data.count ? nil : DesktopPortUDPDescriptor.failure()
         DispatchQueue.main.async { completion(error) }
     }
@@ -101,7 +101,7 @@ final class DesktopPortUDPSocket {
             DispatchQueue.main.async { receiver(data, nil) }
         } else if bytes + data.count <= 4 * DesktopPortLimits.datagram, messages.count < 64 {
             messages.append(data); bytes += data.count
-        } else { fail("UDP 接收队列已满，此会话已停止。") }
+        } else { fail(L10n.text("UDP 接收队列已满，此会话已停止。")) }
     }
     private func drain() {
         guard !closed, let descriptor else { return }
@@ -112,7 +112,7 @@ final class DesktopPortUDPSocket {
                 if errno == EINTR { continue }
                 fail(DesktopPortUDPDescriptor.failure()); return
             }
-            guard count <= DesktopPortLimits.datagram else { fail("UDP 数据报超过 65507 字节。"); return }
+            guard count <= DesktopPortLimits.datagram else { fail(L10n.text("UDP 数据报超过 65507 字节。")); return }
             push(Data(buffer.prefix(count)))
             if closed { return }
         }
@@ -145,7 +145,7 @@ final class DesktopPortUDPListener {
     let port: Int
 
     init(address: String, port: Int) throws {
-        guard let ip = IPv4Address(address) else { throw CloudError("UDP 监听地址无效。") }
+        guard let ip = IPv4Address(address) else { throw CloudError(L10n.text("UDP 监听地址无效。")) }
         let endpoint = try DesktopPortUDPAddress(endpoint: .hostPort(host: .ipv4(ip), port: NWEndpoint.Port(rawValue: UInt16(port))!))
         let descriptor = try DesktopPortUDPDescriptor(family: AF_INET)
         self.descriptor = descriptor
@@ -179,7 +179,7 @@ final class DesktopPortUDPListener {
             }
             let bytes = withUnsafeBytes(of: &address) { Data($0.prefix(Int(length))) }
             let peer = DesktopPortUDPAddress(bytes: bytes, family: Int32(address.ss_family))
-            if count > DesktopPortLimits.datagram { peers[bytes]?.fail("UDP 数据报超过 65507 字节。"); continue }
+            if count > DesktopPortLimits.datagram { peers[bytes]?.fail(L10n.text("UDP 数据报超过 65507 字节。")); continue }
             let socket: DesktopPortUDPSocket
             if let existing = peers[bytes] { socket = existing }
             else {

@@ -46,7 +46,7 @@ final class DesktopAccountState: ObservableObject {
         serverText = defaults.string(forKey: Self.serverKey) ?? Self.defaultServer
         if let stored = defaults.string(forKey: "taoscreen.deviceID") {
             guard let id = UUID(uuidString: stored) else {
-                fatalError("独立桌面设备标识损坏，请检查应用偏好，拒绝自动替换设备身份。")
+                fatalError(L10n.text("独立桌面设备标识损坏，请检查应用偏好，拒绝自动替换设备身份。"))
             }
             deviceID = id
         } else {
@@ -60,7 +60,7 @@ final class DesktopAccountState: ObservableObject {
             serverText = saved.server
             guard let credentials = try CloudKeychain.read(saved.id) else { return }
             guard credentials.account == saved, credentials.deviceID == deviceID else {
-                throw CloudError("登录凭据与当前账号或设备不匹配，请重新登录。")
+                throw CloudError(L10n.text("登录凭据与当前账号或设备不匹配，请重新登录。"))
             }
             client = DesktopAPI(server: try CloudCoding.serverURL(saved.server), credentials: credentials)
             needsLogin = false
@@ -70,7 +70,7 @@ final class DesktopAccountState: ObservableObject {
     func selectServer(_ text: String) throws {
         let server = try CloudCoding.serverURL(text)
         guard server.absoluteString != serverText else { return }
-        guard !busy, account == nil else { throw CloudError("请先退出当前账号，再切换登录服务器。") }
+        guard !busy, account == nil else { throw CloudError(L10n.text("请先退出当前账号，再切换登录服务器。")) }
         defaults.set(server.absoluteString, forKey: Self.serverKey)
         loginMethods = nil
         loginMethodsServer = nil
@@ -117,7 +117,7 @@ final class DesktopAccountState: ObservableObject {
             guard !loginCancelled else { throw CancellationError() }
             let value = try await api.login(email: email, password: password, deviceID: deviceID, name: deviceName)
             try await completeSignIn(value, api: api, server: server)
-        } catch is CancellationError { message = "已取消登录。" }
+        } catch is CancellationError { message = L10n.text("已取消登录。") }
         catch { message = error.localizedDescription }
     }
 
@@ -155,7 +155,7 @@ final class DesktopAccountState: ObservableObject {
             let server = try CloudCoding.serverURL(linking ? (account?.server ?? "") : serverText)
             let api: DesktopAPI
             if linking {
-                guard let current = peerClient else { throw CloudError("请先登录再绑定账号。") }
+                guard let current = peerClient else { throw CloudError(L10n.text("请先登录再绑定账号。")) }
                 api = current
             } else { api = DesktopAPI(server: server) }
             try await api.verifyService()
@@ -170,12 +170,12 @@ final class DesktopAccountState: ObservableObject {
             if linking {
                 try await api.exchangeOAuthLink(login, provider: provider, code: code)
                 await loadIdentities()
-                message = "已绑定 \(provider.title)，两种登录方式现在使用同一个 TaoScreen 账号。"
+                message = L10n.text("已绑定 \(provider.title)，两种登录方式现在使用同一个 TaoScreen 账号。")
                 return
             }
             let value = try await api.exchangeOAuth(login, provider: provider, code: code, deviceID: deviceID)
             try await completeSignIn(value, api: api, server: server)
-        } catch is CancellationError { message = "已取消登录。" }
+        } catch is CancellationError { message = L10n.text("已取消登录。") }
         // 旧版服务端在登录兑换时也使用 identity_conflict 表示邮箱已占用。
         catch let error as CloudAPIError where !linking && ["email_already_registered", "identity_conflict"].contains(error.code) {
             loginConflictProvider = provider
@@ -190,7 +190,7 @@ final class DesktopAccountState: ObservableObject {
         }
         if let previous = account, previous.id != value.account.id {
             try await api.revokeUnacceptedCredentials(value)
-            throw CloudError("本次登录与已保存的 TaoScreen 账号不同。请先退出当前账号，再切换账号。")
+            throw CloudError(L10n.text("本次登录与已保存的 TaoScreen 账号不同。请先退出当前账号，再切换账号。"))
         }
         let encodedAccount = try JSONEncoder().encode(value.account)
         do { try await api.acceptCredentials(value) }
@@ -238,7 +238,7 @@ final class DesktopAccountState: ObservableObject {
             identities = []
             defaults.removeObject(forKey: Self.accountKey)
         } catch {
-            message = "退出未完成：\(error.localizedDescription)"
+            message = L10n.text("退出未完成：\(error.localizedDescription)")
         }
     }
 
