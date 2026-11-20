@@ -94,7 +94,7 @@ curl http://127.0.0.1:28080/health/ready
 docker compose exec api /server create-user user@example.com
 ```
 
-在 macOS 客户端选择 **「账号连接」**，服务器地址填入 `http://127.0.0.1:28080`，输入刚才创建的邮箱与密码即可登录。
+在运行服务的 Mac 上打开客户端，切换到 **「账号直连」**，点击右上角齿轮，在 **「自定义服务器」** 中填入 `http://127.0.0.1:28080` 并点击 **「保存」**。等登录方式检测完成后，再打开右上角齿轮，选择 **「使用邮箱和密码登录」**，输入刚创建的账号。
 
 开发验证命令（在 `server/` 目录下执行）：
 
@@ -226,8 +226,7 @@ Compose 会先等待 PostgreSQL 与 Redis 健康就绪，再自动运行 `migrat
    docker compose --env-file .env.selfhost exec api /server reset-admin admin@example.com
    ```
 
-4. **在 macOS 客户端连接**：
-   打开 TaoScreen，选择顶部的 **「账号连接」**，输入 `https://desktop.example.com`，使用刚创建的普通账号邮箱与密码登录；在需要互控的 Mac 上开启 **「开启远程桌面」** 即可互相发现与控制。
+4. 在两台 Mac 上切换到 **「账号直连」**，在右上角齿轮的 **「自定义服务器」** 中填写实例 HTTPS 地址（例如 `https://desktop.example.com`）并保存。等登录方式检测完成后，再打开齿轮，选择 **「使用邮箱和密码登录」**。两台 Mac 登录同一个普通账号，并打开 **「开启远程桌面」**。
 
 ---
 
@@ -253,7 +252,7 @@ Compose 会先等待 PostgreSQL 与 Redis 健康就绪，再自动运行 `migrat
 
 服务内置公开下载页 **`/download`**。将打包并公证后的版本清单（`taoscreen-macos-arm64.json`、`taoscreen-macos-x86_64.json`）与 DMG 安装包托管到对象存储或静态 HTTPS 服务后，在 `.env.selfhost` 配置 `DESKTOP_RELEASE_ORIGIN` 即可激活下载页：
 
-![TaoScreen 客户端公开下载页](images/server-download.png)
+![TaoScreen 自托管实例公开下载页](images/server-download.png)
 
 打包脚本、版本清单格式与 Sparkle 2.10 Ed25519 更新源配置见 [桌面下载与更新](../server/docs/desktop-updates.md) 与 [macOS 构建与发布](../macos/README.md#应用更新)。
 

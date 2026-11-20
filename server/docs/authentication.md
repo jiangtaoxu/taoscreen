@@ -13,7 +13,7 @@
    docker compose --env-file .env.selfhost exec api /server create-admin admin@example.com
    ```
 
-4. 浏览器打开实例的 `/admin`，登录后选择「创建本地账号」。在 macOS 的「账号连接」中填写实例地址，使用该邮箱和密码登录。还可以在托管机上运行 `docker compose --env-file .env.selfhost exec api /server create-user user@example.com` 创建普通账号。
+4. 浏览器打开实例的 `/admin`，登录后选择「创建本地账号」。在 macOS 客户端切换到「账号直连」，点击右上角齿轮，在「自定义服务器」中填写实例 HTTPS 地址并保存。等登录方式检测完成后，再打开齿轮，选择「使用邮箱和密码登录」。还可以在托管机上运行 `docker compose --env-file .env.selfhost exec api /server create-user user@example.com` 创建普通账号。
 
 开启动态码时，后台登录也可使用密码加一条恢复码。需要绑定验证器或重置管理员密码时，在托管机上运行 `docker compose --env-file .env.selfhost exec api /server reset-admin admin@example.com`。重置会撤销该管理员的现有会话，在开启动态码时重新绑定验证器并替换恢复码。后台会话有效期为 8 小时，可以主动退出。无需配置邮件或短信。
 

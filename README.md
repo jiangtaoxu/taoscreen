@@ -2,7 +2,7 @@
   <img src="macos/Resources/Brand/TaoScreen-logo.png" alt="TaoScreen 应用图标" width="128">
   <h1>TaoScreen 涛子远程桌面</h1>
   <p><strong>轻量、安全、可控的开源远程桌面与内网通道工具</strong></p>
-  <p>支持纯客户端配合 <strong>Tailscale / 局域网免服务器直连</strong>，也支持 <strong>Docker Compose 自托管信令服务器</strong> 实现同账号跨网设备控制</p>
+  <p>支持 <strong>Tailscale / 局域网免登录直连</strong>，也支持通过 <strong>官方服务或自托管信令服务器</strong> 连接同账号设备</p>
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
     <img src="https://img.shields.io/badge/macOS-14.0%2B-000000.svg" alt="macOS 14.0+">
@@ -10,6 +10,7 @@
     <img src="https://img.shields.io/badge/Server-Go%20%2B%20PostgreSQL%20%2B%20Redis-00ADD8.svg" alt="Go + PostgreSQL + Redis">
   </p>
   <p>
+    <a href="https://taoscreen.xujiangtao.com/download">官网下载</a> ·
     <a href="#两种使用方式">使用方式</a> ·
     <a href="#界面预览">界面预览</a> ·
     <a href="#当前已实现功能">功能清单</a> ·
@@ -23,7 +24,7 @@
 
 **TaoScreen（涛子远程桌面）** 是一款专注于原生体验与数据自主可控的远程桌面项目。当前已完整实现 **macOS 14+ 原生桌面端**（Apple Silicon / Intel）与 **Go 自托管账号信令服务端**，后续规划覆盖 **iOS / Android 手机端** 与 **Windows 平台**。
 
-你可以只安装客户端配合 **Tailscale** 或局域网零服务器直连，也可以一键自建信令服务实现同账号多设备的集中管理、无人值守、钥匙串一键解锁、隐私屏与独立双向 TCP/UDP 端口映射。
+客户端启动后默认打开 **「免登录直连」**，可以通过 **Tailscale** 或局域网连接。切换到 **「账号直连」** 后，可使用官方服务或自己的信令服务管理同账号设备。
 
 ## 核心特点
 
@@ -36,13 +37,13 @@
 
 ## 两种使用方式
 
-TaoScreen 针对不同网络与团队需求提供两种独立互补的连接方式，可在客户端顶部随时切换：
+两种连接方式可在客户端顶部切换。
 
-| 对比维度 | 方式一：免登录直连（仅客户端 + 局域网 / Tailscale） | 方式二：账号连接（自托管信令服务端） |
+| 对比维度 | 免登录直连 | 账号直连 |
 | --- | --- | --- |
-| **是否需要自建服务器** | **不需要**（纯客户端即可工作） | **需要**（Docker Compose 自托管 Go 服务端） |
-| **适用网络** | 同一局域网（Bonjour 自动发现）或 **Tailscale 内网** | 任意公网 / 跨复杂 NAT（支持配置 STUN / coturn TURN 中继） |
-| **身份与连接方式** | • **6 位临时密码**（TCP `45871`，逐次确认）<br>• **Tailscale 固定密码**（TCP `45873`，免确认）<br>• **Tailscale 可信设备**（TCP `45872`，密钥对免密） | 邮箱密码、Google / GitHub PKCE 登录，同一账号下的在线设备自动列表展示、点击即连 |
+| **服务端** | 无需服务端 | 官网版默认使用官方服务，也可通过 Docker Compose 自托管 |
+| **适用网络** | 同一局域网（Bonjour 自动发现）或 **Tailscale 内网** | 支持跨网络连接，能否建立会话取决于两端网络和可用中继 |
+| **身份与连接方式** | • **6 位临时密码**（TCP `45871`，逐次确认）<br>• **Tailscale 固定密码**（TCP `45873`，免确认）<br>• **Tailscale 可信设备**（TCP `45872`，密钥对免密） | 官方登录支持 Google 和 GitHub。自托管实例可启用邮箱密码、Google 或 GitHub。登录后从同账号在线设备列表发起连接 |
 | **无人值守（含锁屏直连）** | 支持（Tailscale 固定密码或已配对可信设备，仅限 Tailnet） | 支持（按账号与设备配置的同账号无人值守） |
 | **核心能力** | 屏幕共享（含虚拟屏）、键鼠控制、系统声音；逐次确认直连另支持文件传输与剪贴板同步 | 同账号设备列表、多标签控制、**独立双向 TCP/UDP 端口映射**、**本机钥匙串 Touch ID 一键解锁**、**断连自动锁屏** |
 
@@ -52,17 +53,23 @@ TaoScreen 针对不同网络与团队需求提供两种独立互补的连接方�
 
 ## 界面预览
 
+以下直连、登录和设备列表截图来自 macOS 1.0.23 界面，使用演示数据。
+
 ### 1. 免登录直连与 Tailscale 无人值守（仅客户端）
 
 自动探测本机 Tailscale IP / MagicDNS / 局域网 IP 与在线 Tailscale Mac 节点，支持 6 位临时密码逐次确认，以及 Tailscale 固定密码与可信设备无人值守。
 
 ![免登录直连与 Tailscale 无人值守界面](docs/images/direct-connect.png)
 
-### 2. 自托管账号连接与同账号设备列表
+### 2. 账号登录与同账号设备列表
 
-登录自托管实例后，实时查看同账号在线 Mac 列表、链路延迟、控制状态与一键连接 / 端口映射入口。
+在「账号直连」中使用 Google 或 GitHub 登录。右上角齿轮可切换到自定义服务器。
 
-![自托管账号连接与同账号设备列表](docs/images/account-devices.png)
+![TaoScreen 账号直连登录页，显示 Google 和 GitHub 登录按钮](docs/images/account-login.png)
+
+登录后可查看同账号在线 Mac，并从设备列表发起连接或打开端口映射。
+
+![TaoScreen 同账号设备列表示例](docs/images/account-devices.png)
 
 ### 3. 连接设置、五档画质切换与链路状态浮窗
 
@@ -109,8 +116,8 @@ TaoScreen 针对不同网络与团队需求提供两种独立互补的连接方�
       <br><sub>服务端管理后台（/admin）</sub>
     </td>
     <td align="center" width="50%">
-      <img src="docs/images/server-download.png" alt="客户端下载页">
-      <br><sub>公开下载页（/download）</sub>
+      <img src="docs/images/server-download.png" alt="自托管实例下载页">
+      <br><sub>自托管下载页（/download）</sub>
     </td>
   </tr>
 </table>
@@ -151,9 +158,11 @@ TaoScreen 针对不同网络与团队需求提供两种独立互补的连接方�
 
 ## 快速开始
 
-### 前提：构建 macOS 客户端
+从 [官网下载](https://taoscreen.xujiangtao.com/download) DMG，打开后将 TaoScreen 拖入「应用程序」。
 
-需要安装 Xcode、Swift 工具链与 XcodeGen（`brew install xcodegen`）：
+### 从源码构建（可选）
+
+安装 Xcode、Swift 工具链与 XcodeGen（`brew install xcodegen`），然后运行以下命令。
 
 ```sh
 cd macos
@@ -167,11 +176,17 @@ open dist/TaoScreen.app
 
 1. 在两台 Mac 上启动 `TaoScreen.app`，保持在顶部的 **「免登录直连」** 标签页（若使用跨网互联，请先连通两端 Tailscale）。
 2. **临时协助**：在被控 Mac 开启 **「允许临时连接」**，控制端从「Tailscale 在线 Mac」或「局域网附近设备」选择目标（或输入对方 Tailscale IP / MagicDNS / 局域网 IP）并填入 6 位临时密码，被控端点击「接受并共享」即可。
-3. **长期无人值守**：在被控 Mac 打开「Tailscale 无人值守 → 管理固定密码与权限…」设置 8 位以上固定密码并开启开关，或配对为「可信设备」，即可随时通过 Tailscale 免确认直连（支持锁屏状态下连接）。
+3. **长期无人值守**：在被控 Mac 的「Tailscale 无人值守」卡片中点击「设置固定密码…」，设置 8 位以上密码后开启「固定密码免确认」。也可打开「可信设备」配对并授予无人值守权限。保持被控 Mac 登录且在线时，可通过 Tailscale 在锁屏下直连。
 
-### 方案 B：自托管信令服务器 + 同账号设备控制
+### 方案 B：使用官方服务账号直连
 
-本地开发测试只需一条初始化命令和 Docker Compose（需要 Docker Compose v2 与 Python 3）：
+1. 在两台 Mac 上打开官网版 TaoScreen，切换到 **「账号直连」**。
+2. 使用同一个 Google 或 GitHub 账号登录，并在两台 Mac 上开启 **「开启远程桌面」**。
+3. 在控制端，从 **「同账号设备」** 列表选择目标 Mac，点击 **「连接」**。
+
+### 方案 C：使用自托管信令服务器
+
+本地测试需要 Docker Compose v2 与 Python 3。
 
 ```sh
 cd server
@@ -180,7 +195,7 @@ docker compose up -d --build --wait
 docker compose exec api /server create-user user@example.com
 ```
 
-然后在两台 Mac 的 `TaoScreen.app` 选择 **「账号连接」**，服务器地址填入 `http://127.0.0.1:28080`（生产环境须配置反向代理提供 **HTTPS**）并使用创建的账号登录，开启右上角 **「开启远程桌面」** 即可互相发现与控制。
+在启动服务的 Mac 上，打开 **「账号直连」**，点击右上角齿轮，在 **「自定义服务器」** 中填入 `http://127.0.0.1:28080` 并保存。等客户端检查完登录方式后，再打开齿轮，选择 **「使用邮箱和密码登录」**。其他 Mac 使用可访问的实例 HTTPS 地址。
 
 > 生产环境自托管（HTTPS 反向代理、管理员后台、OAuth、coturn TURN 中继及更新分发）请阅读完整的 **[自托管部署指南](docs/deployment.md)**。
 

@@ -23,7 +23,7 @@ Compose 项目名固定为 `taoscreen-local`，使用独立 PostgreSQL 数据库
 
 ## 自托管生产部署
 
-使用 `.env.production.example` 和通用的 `compose.yaml` 部署。默认示例启用普通用户邮箱密码和管理员密码加动态码，关闭公开注册。管理员在 `/admin` 创建普通用户，macOS 选择「账号连接」并填写实例 HTTPS 地址。配置步骤和首次绑定命令见 [自托管登录](docs/authentication.md#自托管登录)。
+使用 `.env.production.example` 和通用的 `compose.yaml` 部署。默认示例启用普通用户邮箱密码和管理员密码加动态码，关闭公开注册。管理员在 `/admin` 创建普通用户。macOS 客户端切到「账号直连」，在右上角齿轮的「自定义服务器」中填写实例 HTTPS 地址。配置步骤和首次绑定命令见 [自托管登录](docs/authentication.md#自托管登录)。
 
 ## 配置
 
