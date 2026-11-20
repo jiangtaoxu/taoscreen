@@ -10,6 +10,10 @@ on:
         description: 已推送到 GitHub 的 vX.Y.Z 标签
         required: true
         type: string
+      publish:
+        description: 将公证后的安装包上传到 GitHub Release
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -21,7 +25,7 @@ env:
 
 jobs:
   build:
-    name: 构建通用 DMG
+    name: 构建通用 App
     if: ${{ !github.event.deleted }}
     runs-on: macos-26
     permissions:
@@ -35,26 +39,105 @@ jobs:
           persist-credentials: false
       - name: 安装 XcodeGen
         run: brew install xcodegen
-      - name: 按 tag 构建 DMG
-        run: python3 macos/scripts/package-release.py --github-dmg "$TAG_NAME"
+      - name: 按 tag 构建通用 App
+        run: |
+          python3 macos/scripts/package-release.py --github-dmg "$TAG_NAME"
+          ditto -c -k --sequesterRsrc --keepParent macos/dist/TaoScreen.app "$RUNNER_TEMP/TaoScreen-app.zip"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: artifact
         with:
-          name: taoscreen-dmg-${{ github.run_attempt }}
+          name: taoscreen-app-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/TaoScreen-app.zip
+          if-no-files-found: error
+          compression-level: 0
+
+  notarize:
+    name: 签名并公证 DMG
+    needs: build
+    runs-on: macos-26
+    environment: macos-release
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: ${{ runner.temp }}/release-app
+          merge-multiple: true
+      - name: 解包待签名 App
+        run: ditto -x -k "$RUNNER_TEMP/release-app/TaoScreen-app.zip" "$RUNNER_TEMP/release-app"
+      - name: 在临时钥匙串中签名并完成 Apple 公证
+        shell: bash
+        env:
+          MACOS_SIGNING_P12: ${{ secrets.MACOS_SIGNING_P12 }}
+          MACOS_SIGNING_P12_PASSWORD: ${{ secrets.MACOS_SIGNING_P12_PASSWORD }}
+          MACOS_NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          MACOS_NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          TAOSCREEN_TEAM_ID: ${{ vars.MACOS_TEAM_ID }}
+          TAOSCREEN_NOTARY_PROFILE: taoscreen-release
+        run: |
+          set -eu
+          : "${MACOS_SIGNING_P12:?缺少 Developer ID 证书}"
+          : "${MACOS_SIGNING_P12_PASSWORD:?缺少证书导出密码}"
+          : "${MACOS_NOTARY_APPLE_ID:?缺少公证 Apple 账号}"
+          : "${MACOS_NOTARY_PASSWORD:?缺少 Apple App 专用密码}"
+          : "${TAOSCREEN_TEAM_ID:?缺少 Apple Team ID}"
+
+          umask 077
+          signing_dir="$(mktemp -d "$RUNNER_TEMP/taoscreen-sign.XXXXXX")"
+          keychain="$signing_dir/release.keychain-db"
+          certificate="$signing_dir/developer-id.p12"
+          cleanup() {
+            security delete-keychain "$keychain" >/dev/null 2>&1 || true
+            rm -f "$certificate"
+            rmdir "$signing_dir"
+          }
+          trap cleanup EXIT
+          keychain_password="$(openssl rand -hex 32)"
+          printf '%s' "$MACOS_SIGNING_P12" | base64 -D > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security import "$certificate" -P "$MACOS_SIGNING_P12_PASSWORD" -f pkcs12 -T /usr/bin/codesign -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
+          rm -f "$certificate"
+          TAOSCREEN_SIGN_IDENTITY="$(security find-identity -v -p codesigning "$keychain" | awk '/Developer ID Application:/ { print $2 }')"
+          if [[ ! "$TAOSCREEN_SIGN_IDENTITY" =~ ^[0-9A-F]{40}$ ]]; then
+            echo '临时钥匙串必须包含一个可用的 Developer ID Application 身份' >&2
+            exit 1
+          fi
+          xcrun notarytool store-credentials "$TAOSCREEN_NOTARY_PROFILE" --keychain "$keychain" \
+            --apple-id "$MACOS_NOTARY_APPLE_ID" --team-id "$TAOSCREEN_TEAM_ID" --password "$MACOS_NOTARY_PASSWORD"
+          unset MACOS_SIGNING_P12 MACOS_SIGNING_P12_PASSWORD MACOS_NOTARY_APPLE_ID MACOS_NOTARY_PASSWORD
+          export TAOSCREEN_SIGN_IDENTITY TAOSCREEN_NOTARY_KEYCHAIN="$keychain"
+          python3 macos/scripts/package-release.py --github-sign-dmg "$TAG_NAME" "$RUNNER_TEMP/release-app/TaoScreen.app"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: artifact
+        with:
+          name: taoscreen-notarized-dmg-${{ github.run_attempt }}
           path: macos/dist/TaoScreen-*-universal.dmg
           if-no-files-found: error
           compression-level: 0
 
   release:
     name: 上传到 GitHub Release
-    needs: build
+    needs: notarize
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          artifact-ids: ${{ needs.notarize.outputs.artifact-id }}
           path: release
           merge-multiple: true
       - name: 发布安装包

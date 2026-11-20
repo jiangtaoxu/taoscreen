@@ -39,24 +39,6 @@ test -x "$BUILT_APP/Contents/MacOS/TaoScreen"
 mkdir -p "$ROOT/dist"
 rm -rf "$OUTPUT"
 ditto "$BUILT_APP" "$OUTPUT"
-if [ -n "${TAOSCREEN_SIGN_IDENTITY:-}" ]; then
-    SIGN_ARGS=(--force --sign "$TAOSCREEN_SIGN_IDENTITY" --options runtime --timestamp)
-else
-    SIGN_ARGS=(--force --sign - --timestamp=none)
-fi
-codesign "${SIGN_ARGS[@]}" "$OUTPUT/Contents/Frameworks/WebRTC.framework"
-# Sparkle 的独立安装器和 XPC 服务先签名，最后签框架及主应用。
-SPARKLE_RUNTIME="$OUTPUT/Contents/Frameworks/Sparkle.framework/Versions/Current"
-for component in XPCServices/Downloader.xpc XPCServices/Installer.xpc Autoupdate Updater.app; do
-    codesign "${SIGN_ARGS[@]}" "$SPARKLE_RUNTIME/$component"
-done
-codesign "${SIGN_ARGS[@]}" "$OUTPUT/Contents/Frameworks/Sparkle.framework"
 cp "$ROOT/.build/SourcePackages/artifacts/sparkle/Sparkle/LICENSE" "$OUTPUT/Contents/Resources/Sparkle-LICENSE.txt"
-if [ -n "$PROVISIONING_PROFILE" ]; then
-    cp "$PROVISIONING_PROFILE" "$OUTPUT/Contents/embedded.provisionprofile"
-    codesign "${SIGN_ARGS[@]}" --entitlements "$APP_ENTITLEMENTS" "$OUTPUT"
-else
-    codesign "${SIGN_ARGS[@]}" "$OUTPUT"
-fi
-codesign --verify --deep --strict "$OUTPUT"
+bash "$ROOT/scripts/sign-app.sh" "$OUTPUT"
 echo "已生成：$OUTPUT"

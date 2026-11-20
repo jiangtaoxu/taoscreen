@@ -79,7 +79,10 @@ def check_config(args):
 
 
 def notarize(submission, target):
-    subprocess.run(['xcrun', 'notarytool', 'submit', str(submission), '--keychain-profile', NOTARY_PROFILE, '--wait'], check=True)
+    command = ['xcrun', 'notarytool', 'submit', str(submission), '--keychain-profile', NOTARY_PROFILE, '--wait']
+    if keychain := os.environ.get('TAOSCREEN_NOTARY_KEYCHAIN'):
+        command.extend(['--keychain', keychain])
+    subprocess.run(command, check=True)
     subprocess.run(['xcrun', 'stapler', 'staple', str(target)], check=True)
 
 
@@ -337,11 +340,36 @@ def create_disk_image(app, disk_image, version):
                     '-format', 'UDZO', str(disk_image)], check=True)
 
 
-def build_github_dmg(tag):
+def notarize_app(app, archive):
+    subprocess.run(['ditto', '-c', '-k', '--keepParent', str(app), str(archive)], check=True)
+    notarize(archive, app)
+    subprocess.run(['spctl', '--assess', '--type', 'execute', '-vv', str(app)], check=True)
+
+
+def notarize_disk_image(disk_image):
+    subprocess.run(['codesign', '--force', '--sign', SIGN_IDENTITY, '--timestamp', str(disk_image)], check=True)
+    notarize(disk_image, disk_image)
+    subprocess.run(['spctl', '--assess', '--type', 'open', '--context', 'context:primary-signature', '-vv', str(disk_image)], check=True)
+
+
+def github_version(tag):
     version = tag.removeprefix('v')
     if not tag.startswith('v') or not VERSION_PATTERN.fullmatch(version):
         raise SystemExit('GitHub 发布 tag 必须为 vX.Y.Z，每段为不带前导零的 0–9999')
+    return version
 
+
+def verify_github_app(app, version):
+    info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+    if info.get('CFBundleShortVersionString') != version or info.get('CFBundleVersion') != build_number(version):
+        raise SystemExit('构建应用的版本与 GitHub tag 不一致，已停止打包')
+    architectures = subprocess.check_output(['lipo', '-archs', str(app / 'Contents/MacOS/TaoScreen')], text=True)
+    if set(architectures.split()) != {'arm64', 'x86_64'}:
+        raise SystemExit('构建应用缺少 Apple Silicon 或 Intel 架构，已停止打包')
+
+
+def build_github_dmg(tag):
+    version = github_version(tag)
     app = root / 'dist/TaoScreen.app'
     package = app.parent / package_name(version, 'universal')
     with tempfile.TemporaryDirectory(prefix='taoscreen-github-release-') as work:
@@ -365,17 +393,33 @@ def build_github_dmg(tag):
             'TAOSCREEN_UPDATE_FEED_URL': '',
             'TAOSCREEN_UPDATE_PUBLIC_KEY': '',
         })
-        built_info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
-        if any(built_info.get(key) != info[key] for key in ('CFBundleShortVersionString', 'CFBundleVersion')):
-            raise SystemExit('构建应用的版本与 GitHub tag 不一致，已停止打包')
-        architectures = subprocess.check_output(['lipo', '-archs', str(app / 'Contents/MacOS/TaoScreen')], text=True)
-        if set(architectures.split()) != {'arm64', 'x86_64'}:
-            raise SystemExit('构建应用缺少 Apple Silicon 或 Intel 架构，已停止打包')
-
+        verify_github_app(app, version)
         disk_image = work / package.name
         create_disk_image(app, disk_image, version)
         shutil.move(disk_image, package)
     print(f'已生成：{package}')
+
+
+def sign_github_dmg(tag, app):
+    version = github_version(tag)
+    if not SIGN_IDENTITY or not NOTARY_PROFILE or not re.fullmatch(r'[A-Z0-9]{10}', TEAM_ID):
+        raise SystemExit('GitHub 公证需要配置签名身份、Apple Team ID 和公证配置')
+    app = pathlib.Path(app).resolve()
+    verify_github_app(app, version)
+    package = root / 'dist' / package_name(version, 'universal')
+    with tempfile.TemporaryDirectory(prefix='taoscreen-github-signing-') as temporary:
+        work = pathlib.Path(temporary)
+        signed_app = work / 'TaoScreen.app'
+        subprocess.run(['ditto', str(app), str(signed_app)], check=True)
+        subprocess.run(['bash', str(root / 'scripts/sign-app.sh'), str(signed_app)], check=True)
+        subprocess.run(['codesign', '--verify', '--deep', '--strict', '-R', publisher_requirement(), str(signed_app)], check=True)
+        notarize_app(signed_app, work / 'TaoScreen.zip')
+        disk_image = work / package.name
+        create_disk_image(signed_app, disk_image, version)
+        notarize_disk_image(disk_image)
+        package.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(disk_image, package)
+    print(f'已生成公证安装包：{package}')
 
 
 def build(version, notes, arch, plist_path):
@@ -400,10 +444,7 @@ def build(version, notes, arch, plist_path):
     package.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='taoscreen-release-') as work:
         work = pathlib.Path(work)
-        archive = work / 'TaoScreen.zip'
-        subprocess.run(['ditto', '-c', '-k', '--keepParent', str(app), str(archive)], check=True)
-        notarize(archive, app)
-        subprocess.run(['spctl', '--assess', '--type', 'execute', '-vv', str(app)], check=True)
+        notarize_app(app, work / 'TaoScreen.zip')
         # 装订票据后的应用直接归档；Sparkle 下载 ZIP，无需挂载磁盘镜像。
         update_archive = output / 'macos' / version / package_name(version, arch, 'zip')
         subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(app), str(update_archive)], check=True)
@@ -414,9 +455,7 @@ def build(version, notes, arch, plist_path):
         # DMG 用于手动安装。
         disk_image = work / package.name
         create_disk_image(app, disk_image, version)
-        subprocess.run(['codesign', '--force', '--sign', SIGN_IDENTITY, '--timestamp', str(disk_image)], check=True)
-        notarize(disk_image, disk_image)
-        subprocess.run(['spctl', '--assess', '--type', 'open', '--context', 'context:primary-signature', '-vv', str(disk_image)], check=True)
+        notarize_disk_image(disk_image)
         shutil.move(disk_image, package)
     manifest = dict(version=version, platform='macos', arch=arch,
                     url=f'{RELEASE_ORIGIN}/macos/{version}/{package.name}',
@@ -435,12 +474,17 @@ def main():
     parser.add_argument('--upload', action='store_true', help='生成后上传 R2；清单生效后用户即可收到更新')
     parser.add_argument('--upload-only', action='store_true', help='不重新构建，上传已生成的本地发布文件')
     parser.add_argument('--init-update-key', action='store_true', help='仅初始化 TaoScreen 独立 Sparkle 密钥，不构建或发布')
-    parser.add_argument('--github-dmg', metavar='TAG', help='按 vX.Y.Z 生成 GitHub Release 通用 DMG，仅做临时签名')
+    github = parser.add_mutually_exclusive_group()
+    github.add_argument('--github-dmg', metavar='TAG', help='按 vX.Y.Z 构建临时签名的通用 DMG')
+    github.add_argument('--github-sign-dmg', nargs=2, metavar=('TAG', 'APP'), help='按 vX.Y.Z 为通用 App 签名并生成公证 DMG')
     args = parser.parse_args()
-    if args.github_dmg is not None:
+    if args.github_dmg is not None or args.github_sign_dmg is not None:
         if args.version or args.notes or args.notes_file or args.upload or args.upload_only or args.init_update_key:
-            parser.error('--github-dmg 不能与正式发布参数同时使用')
-        build_github_dmg(args.github_dmg)
+            parser.error('GitHub 打包与正式发布参数不能同时使用')
+        if args.github_sign_dmg is not None:
+            sign_github_dmg(*args.github_sign_dmg)
+        else:
+            build_github_dmg(args.github_dmg)
         return
     check_config(args)
     if args.init_update_key:

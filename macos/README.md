@@ -127,11 +127,11 @@ Sparkle 使用 HTTPS appcast 和 Ed25519 公钥验证更新包。源码构建默
 
 ### GitHub Release 安装包
 
-先推送包含工作流的分支，再单独推送 `vX.Y.Z` 格式的 Git tag。[GitHub Actions](../.github/workflows/macos-release.yml) 会构建 `TaoScreen-X.Y.Z-universal.dmg`，并上传到同一 tag 的 GitHub Release。也可在 Actions 页手动运行「发布 macOS DMG」，并指定已经推送的 tag。
+先推送包含工作流的分支，再单独推送 `vX.Y.Z` 格式的 Git tag。[GitHub Actions](../.github/workflows/macos-release.yml) 会构建兼容 Apple Silicon 和 Intel 的 `TaoScreen-X.Y.Z-universal.dmg`，完成 Developer ID 签名、Apple 公证和 Gatekeeper 验证后上传到同一 tag 的 GitHub Release。也可在 Actions 页从 `main` 手动运行「发布 macOS DMG」，指定已经推送的 tag。仅验证公证流程时关闭上传选项，可从该次工作流下载产物。
 
-一个 DMG 同时支持 Apple Silicon 和 Intel。这个安装包使用临时签名，未经过 Apple 公证，也不包含预设服务器或 Sparkle 更新源。macOS 首次打开时可能拦截。
+GitHub 的 `macos-release` 环境允许 `main` 和版本标签。设环境变量 `MACOS_TEAM_ID`，并添加环境 Secrets `MACOS_SIGNING_P12`（Developer ID Application 的 `.p12` 文件经 Base64 编码）、`MACOS_SIGNING_P12_PASSWORD`、`MACOS_NOTARY_APPLE_ID` 和 `MACOS_NOTARY_PASSWORD`（Apple App 专用密码）。发布产物适用于免登录直连或自行配置服务器的使用场景。
 
-在本机可运行 `python3 scripts/package-release.py --github-dmg v1.0.20` 从当前检出的源码生成同名 DMG，产物位于 `dist/`。
+在本机可运行 `python3 scripts/package-release.py --github-dmg v1.0.20` 从当前检出的源码生成临时签名 DMG，产物位于 `dist/`。已配置本机公证凭据时，可用 `--github-sign-dmg v1.0.20 dist/TaoScreen.app` 签名和公证该应用。
 
 ## 远程 Mac 操作
 
