@@ -25,7 +25,7 @@
 
 ## 下载并试用：把本机听写送到远端 Mac
 
-[下载官网通用 DMG](https://taoscreen.xujiangtao.com/download) · [GitHub Release 备用下载](https://github.com/jiangtaoxu/taoscreen/releases/tag/v1.0.23)  
+[下载官网通用 DMG](https://taoscreen.xujiangtao.com/download) · [GitHub Release 备用下载](https://github.com/jiangtaoxu/taoscreen/releases/latest)  
 适用于 macOS 14 或更新版本，支持 Apple Silicon 和 Intel。打开 DMG，将 TaoScreen 拖入「应用程序」。
 
 1. 在同一局域网或互通的 Tailscale 网络里，两台 Mac 都打开 TaoScreen。用「免登录直连」和 6 位临时密码连接；被控端接受时允许键鼠控制和文本粘贴。
